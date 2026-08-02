@@ -302,7 +302,7 @@
     <string name="tc4_menu_shortcuts">Shortcuts</string>
 
     <!-- ==================== Root Detection ==================== -->
-    <string name="tc4_root_detect_title">Tiny Container (Chroot)</string>
+    <string name="tc4_root_detect_title">Detect Root Permissions</string>
     <string name="tc4_root_detect_checking">Checking root permissions…</string>
     <string name="tc4_root_detect_ready">Press the button to check root permissions</string>
     <string name="tc4_root_detect_btn">Detect Root</string>
@@ -311,6 +311,9 @@
     <string name="tc4_root_detect_unknown_error">Unknown error during root detection</string>
     <string name="tc4_root_detect_original_link">This app requires root. Try the original Tiny Container at github.com/Cateners/tiny_container</string>
     <string name="tc4_root_detect_footer">Root permission is required to run containers with chroot for better performance and compatibility.</string>
+    <string name="tc4_root_detect_desc">This app uses chroot to run Linux containers and requires root permission</string>
+    <string name="tc4_root_detect_fail">Root permission not detected</string>
+    <string name="tc4_root_detect_fail_desc">This app requires root permission to run.\nNo root? Use the original Tiny Container.</string>
 
     <!-- ==================== Chroot Management ==================== -->
     <string name="tc4_chroot_title">Chroot Management</string>
