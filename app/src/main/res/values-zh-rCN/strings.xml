@@ -296,4 +296,40 @@
     <string name="tc4_menu_battery_optimization">关闭电池优化</string>
     <string name="tc4_menu_shortcuts">快捷方式</string>
 
+    <!-- ==================== Root Detection ==================== -->
+    <string name="tc4_root_detect_title">检测 Root 权限</string>
+    <string name="tc4_root_detect_desc">此应用使用 chroot 运行 Linux 容器，需要 root 权限才能运行</string>
+    <string name="tc4_root_detect_btn">检测 Root 权限</string>
+    <string name="tc4_root_detect_checking">正在检测…</string>
+    <string name="tc4_root_detect_success">Root 权限已获取！正在进入…</string>
+    <string name="tc4_root_detect_fail">未检测到 Root 权限</string>
+    <string name="tc4_root_detect_fail_desc">此应用需要 root 权限才能运行。\n没有 root 权限？请使用原版 Tiny Container。</string>
+    <string name="tc4_root_detect_original_link">前往原版项目</string>
+
+    <!-- ==================== Chroot Management ==================== -->
+    <string name="tc4_settings_chroot_manage_title">Chroot 管理</string>
+    <string name="tc4_settings_chroot_manage_desc">管理挂载、修复权限、配置 chroot 设置</string>
+    <string name="tc4_settings_chroot_status_desc">已获取 Root 权限 — 容器以 chroot 模式运行，性能更好</string>
+    <string name="tc4_settings_chroot_unavailable_desc">未获取 Root 权限 — 容器以 proot 模式运行</string>
+    <string name="tc4_chroot_title">Chroot 管理</string>
+    <string name="tc4_chroot_description">管理 chroot 容器的挂载和设置</string>
+    <string name="tc4_chroot_mount_status">挂载状态</string>
+    <string name="tc4_chroot_mounted">已挂载</string>
+    <string name="tc4_chroot_not_mounted">未挂载</string>
+    <string name="tc4_chroot_btn_mount">全部挂载</string>
+    <string name="tc4_chroot_btn_unmount">全部卸载</string>
+    <string name="tc4_chroot_mount_success">文件系统已全部挂载</string>
+    <string name="tc4_chroot_mount_failed">挂载失败：%1$s</string>
+    <string name="tc4_chroot_unmount_success">文件系统已全部卸载</string>
+    <string name="tc4_chroot_unmount_failed">卸载失败：%1$s</string>
+    <string name="tc4_chroot_repair_title">修复权限</string>
+    <string name="tc4_chroot_repair_desc">修复容器根文件系统的文件所有权和权限</string>
+    <string name="tc4_chroot_repair_btn">修复</string>
+    <string name="tc4_chroot_repair_done">权限修复完成</string>
+    <string name="tc4_chroot_shared_dirs">共享目录</string>
+    <string name="tc4_chroot_shared_desc">将 Android 目录绑定挂载到容器中</string>
+    <string name="tc4_chroot_root_status">Root 状态：%1$s</string>
+    <string name="tc4_chroot_root_available">可用</string>
+    <string name="tc4_chroot_root_unavailable">不可用</string>
+
 </resources>

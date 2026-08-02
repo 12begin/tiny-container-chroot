@@ -484,10 +484,21 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         val app = getApplication<Application>()
 
         _installState.value = InstallState.ExtractingConfig
-        execShell {
-            Global.setupEnvironment()
-            Global.sendCommand($$"tar -xf $CACHE_DIR/rootfs.tar.zst -C $CACHE_DIR .tiny.yaml")
-            Global.sendCommand("exit")
+
+        // 尝试用 execShell + tar 提取 .tiny.yaml
+        val cacheDir = app.cacheDir.absolutePath
+        val rootfsFile = File(app.cacheDir, "rootfs.tar.zst")
+        if (!rootfsFile.exists()) {
+            cleanCacheFiles()
+            _installState.value = InstallState.Failed(app.getString(R.string.tc4_import_failed, "rootfs file not found"))
+            return null
+        }
+
+        // 方式一：通过 execShell 提取（原版方式）
+        val extracted = extractConfigViaExecShell(app, cacheDir)
+        if (!extracted) {
+            // 方式一失败，尝试方式二：直接通过 ProcessBuilder 调用 tar
+            extractConfigViaProcessBuilder(app, cacheDir)
         }
 
         val configFile = File(app.cacheDir, ".tiny.yaml")
@@ -506,6 +517,38 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             return null
         }
         return config
+    }
+
+    /** 通过 execShell 提取 .tiny.yaml */
+    private suspend fun extractConfigViaExecShell(app: Application, cacheDir: String): Boolean {
+        return try {
+            execShell {
+                Global.setupEnvironment()
+                Global.sendCommand("tar -xf \"$cacheDir/rootfs.tar.zst\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
+                Global.sendCommand("exit")
+            }
+            File(app.cacheDir, ".tiny.yaml").exists()
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** 通过 ProcessBuilder 提取 .tiny.yaml（备用方案） */
+    private fun extractConfigViaProcessBuilder(app: Application, cacheDir: String) {
+        try {
+            val tarBin = "${app.filesDir.absolutePath}/bootstrap/bin/tar"
+            val pb = ProcessBuilder(
+                tarBin, "-xf", "${cacheDir}/rootfs.tar.zst",
+                "-C", cacheDir, ".tiny.yaml"
+            )
+            pb.environment().putAll(mapOf(
+                "LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"
+            ))
+            val process = pb.start()
+            process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (_: Exception) {
+            // 忽略，留给后续文件存在性检查
+        }
     }
 
     /** 执行实际的容器安装操作（解压 rootfs、修复权限、保存配置），调用方负责状态管理 */
