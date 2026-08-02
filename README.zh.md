@@ -14,11 +14,11 @@ The original author [stated clearly](https://github.com/Cateners/tiny_container)
 
 > "I have no experience developing apps that use root (and managing root seems like a huge hassle), so I won't be supporting chroot."
 
-Fair point. For most users proot works fine. But if your device is already rooted, chroot runs faster and has fewer quirks. So here we are.
+Fair point. For most users proot works fine. But if your device is already rooted, chroot runs faster and can do more. So here we are.
 
 ### What's different
 
-- chroot instead of proot. Better performance, fewer compatibility issues.
+- chroot instead of proot. Better performance, can do more.
 - Full filesystem mount (proc, sys, dev, dev/pts)
 - Root detection on first launch
 - Root permission is **required**. No root? Use the [original version](https://github.com/Cateners/tiny_container).

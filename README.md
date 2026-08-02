@@ -14,11 +14,11 @@
 
 > "我从没有开发使用 root 的应用的经验（而且感觉管理 root 会非常麻烦），所以我不会支持 chroot。"
 
-说得对。对大多数用户来说 proot 够用了。但设备都 root 了，chroot 跑得更快、兼容问题更少，所以就做了。
+说得对。对大多数用户来说 proot 够用了。但设备都 root 了，chroot 跑得更快、能做更多事情，所以就做了。
 
 ### 区别
 
-- 用 chroot 代替 proot。性能更好，兼容性问题更少。
+- 用 chroot 代替 proot。性能更好，能做到更多事情。
 - 完整挂载文件系统（proc、sys、dev、dev/pts）
 - 首次启动自动检测 root 权限
 - **需要 root 权限**。没有 root？请用[原版](https://github.com/Cateners/tiny_container)。
