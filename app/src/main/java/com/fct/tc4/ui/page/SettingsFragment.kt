@@ -100,6 +100,15 @@ class SettingsFragment : Fragment() {
                 LauncherShortcutDialogFragment.newInstance(code)
                     .show(childFragmentManager, "launcher_shortcut")
             }
+            "chroot_manage" -> {
+                if (Global.rootAvailable) {
+                    val code = arguments?.getString("code") ?: ""
+                    val intent = Intent(requireContext(), com.fct.tc4.ChrootManageActivity::class.java).apply {
+                        putExtra("code", code)
+                    }
+                    startActivity(intent)
+                }
+            }
             "manage_files" -> {
                 when {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {

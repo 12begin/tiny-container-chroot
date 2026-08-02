@@ -25,6 +25,15 @@ android {
         version = release(37)
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = System.getenv("STORE_FILE")?.let { file(it) }
+            storePassword = System.getenv("STORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+        }
+    }
+
     defaultConfig {
         applicationId = "com.fct.tc4"
         minSdk = 28
@@ -39,6 +48,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

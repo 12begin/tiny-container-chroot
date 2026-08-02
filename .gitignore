@@ -26,6 +26,7 @@ app/release/
 # Signing keys
 *.jks
 *.keystore
+*.b64
 
 # Logs
 *.log

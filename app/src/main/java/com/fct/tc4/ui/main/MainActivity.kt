@@ -259,6 +259,15 @@ class MainActivity : AppCompatActivity() {
         // 已完成初始导航，不再重复导航（singleTask 下 onNewIntent 可能再次触发 ACTION_MAIN）
         if (viewModel.screen.value !is MainViewModel.Screen.Init) return
 
+        // 安全检测：如果未完成 root 检测，跳转到 RootDetectActivity
+        if (!Global.rootCheckDone) {
+            startActivity(Intent(this, com.fct.tc4.RootDetectActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+            finish()
+            return
+        }
+
         if (!Global.isFirstLaunchDone && Global.hasBuiltInRootfs()) {
             val containerViewModel: ContainerManageViewModel by viewModels()
             containerViewModel.autoInstallBuiltInContainer()

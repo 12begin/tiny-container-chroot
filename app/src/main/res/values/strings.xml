@@ -103,6 +103,11 @@
     <string name="tc4_settings_manage_files_desc">Allow the container to access Android files\nWhen using official containers, Android storage is usually at /mnt/sdcard</string>
     <string name="tc4_settings_battery_title">Battery Unrestricted</string>
     <string name="tc4_settings_battery_desc">Disable battery optimization to prevent the app from being killed by the system</string>
+    <string name="tc4_settings_chroot_manage_title">Chroot Management</string>
+    <string name="tc4_settings_chroot_manage_desc">Manage mounts, repair permissions, and configure chroot settings</string>
+    <string name="tc4_settings_chroot_status_title">Root Permission</string>
+    <string name="tc4_settings_chroot_status_desc">Root is available — containers run in chroot mode for better performance</string>
+    <string name="tc4_settings_chroot_unavailable_desc">Root not available — containers run in proot mode</string>
 
     <!-- ==================== Help Page ==================== -->
     <string name="tc4_help_source_code_title">Source Code Repository</string>
@@ -296,7 +301,41 @@
     <string name="tc4_menu_battery_optimization">Disable Battery Optimization</string>
     <string name="tc4_menu_shortcuts">Shortcuts</string>
 
-    <!-- ==================== Non-translatable ==================== -->
+    <!-- ==================== Root Detection ==================== -->
+    <string name="tc4_root_detect_title">Tiny Container (Chroot)</string>
+    <string name="tc4_root_detect_checking">Checking root permissions…</string>
+    <string name="tc4_root_detect_ready">Press the button to check root permissions</string>
+    <string name="tc4_root_detect_btn">Detect Root</string>
+    <string name="tc4_root_detect_success">Root permission detected! Starting app…</string>
+    <string name="tc4_root_detect_failed">Root permission not detected</string>
+    <string name="tc4_root_detect_unknown_error">Unknown error during root detection</string>
+    <string name="tc4_root_detect_original_link">This app requires root. Try the original Tiny Container at github.com/Cateners/tiny_container</string>
+    <string name="tc4_root_detect_footer">Root permission is required to run containers with chroot for better performance and compatibility.</string>
+
+    <!-- ==================== Chroot Management ==================== -->
+    <string name="tc4_chroot_title">Chroot Management</string>
+    <string name="tc4_chroot_description">Manage chroot container mounts and settings</string>
+    <string name="tc4_chroot_mount_status">Mount Status</string>
+    <string name="tc4_chroot_mounted">Mounted</string>
+    <string name="tc4_chroot_not_mounted">Not mounted</string>
+    <string name="tc4_chroot_btn_mount">Mount All</string>
+    <string name="tc4_chroot_btn_unmount">Unmount All</string>
+    <string name="tc4_chroot_mount_success">All filesystems mounted successfully</string>
+    <string name="tc4_chroot_mount_failed">Mount failed: %1$s</string>
+    <string name="tc4_chroot_unmount_success">All filesystems unmounted</string>
+    <string name="tc4_chroot_unmount_failed">Unmount failed: %1$s</string>
+    <string name="tc4_chroot_repair_title">Repair Permissions</string>
+    <string name="tc4_chroot_repair_desc">Fix file ownership and permissions inside the container rootfs</string>
+    <string name="tc4_chroot_repair_btn">Repair</string>
+    <string name="tc4_chroot_repair_done">Permission repair completed</string>
+    <string name="tc4_chroot_shared_dirs">Shared Directories</string>
+    <string name="tc4_chroot_shared_desc">Bind mount Android directories into the container</string>
+    <string name="tc4_chroot_shared_sdcard">SD Card (/sdcard)</string>
+    <string name="tc4_chroot_shared_downloads">Downloads</string>
+    <string name="tc4_chroot_shared_documents">Documents</string>
+    <string name="tc4_chroot_root_status">Root: %1$s</string>
+    <string name="tc4_chroot_root_available">Available</string>
+    <string name="tc4_chroot_root_unavailable">Unavailable</string>
     <string-array name="tc4_container_code_denylist" translatable="false">
         <item>^app.*$</item>
         <item>^cache$</item>

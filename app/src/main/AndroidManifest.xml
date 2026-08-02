@@ -28,10 +28,6 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
 
 
             <!-- Import files to public folder (any format) -->
@@ -63,6 +59,20 @@
         <activity
             android:name=".ui.page.LicenseActivity"
             android:exported="false" />
+        <activity
+            android:name=".RootDetectActivity"
+            android:exported="true"
+            android:theme="@style/Theme.TinyContainer"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ChrootManageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TinyContainer" />
 
         <provider
             android:name=".ui.misc.TinyDocumentsProvider"

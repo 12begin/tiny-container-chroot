@@ -136,6 +136,16 @@ class ContainerMainViewModel(
         for (cmd in merged.postEndHostCommands) {
             Global.sendCommand(cmd)
         }
+        // chroot 模式：卸载文件系统
+        if (Global.rootAvailable) {
+            val suPath = Global.suPath
+            val containerDir = "${getApplication<Application>().dataDir.absolutePath}/$code"
+            if (suPath.isNotEmpty()) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    ChrootManager.umountAll(suPath, containerDir)
+                }
+            }
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -164,7 +174,7 @@ class ContainerMainViewModel(
         }
     }
 
-    private fun setupEnvironment() {
+    private suspend fun setupEnvironment() {
         val app = getApplication<Application>()
         Global.newSession(onFinished = { exitCode ->
             if (exitCode == -9) {
@@ -179,11 +189,23 @@ class ContainerMainViewModel(
         Global.setupEnvironment()
         val containerDir = "${app.dataDir.absolutePath}/$code"
         Global.sendCommand("export CONTAINER_DIR=$containerDir")
-        val prootVariant = if (Global.useLegacyProot) "proot-classic" else "proot-latest"
-        Global.sendCommand(
-            "ln -sf ${app.filesDir.absolutePath}/applib/lib__bin__${prootVariant}__.so" +
-            " ${app.filesDir.absolutePath}/bootstrap/bin/proot"
-        )
+
+        if (Global.rootAvailable) {
+            // chroot 模式：挂载文件系统，跳过 proot 设置
+            val suPath = Global.suPath
+            if (suPath.isNotEmpty()) {
+                withContext(Dispatchers.IO) {
+                    ChrootManager.mountAll(suPath, containerDir)
+                }
+            }
+        } else {
+            // proot 模式：链接 proot 二进制
+            val prootVariant = if (Global.useLegacyProot) "proot-classic" else "proot-latest"
+            Global.sendCommand(
+                "ln -sf ${app.filesDir.absolutePath}/applib/lib__bin__${prootVariant}__.so" +
+                " ${app.filesDir.absolutePath}/bootstrap/bin/proot"
+            )
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -208,10 +230,27 @@ class ContainerMainViewModel(
             .replace("\$EXTRA_LD_PRELOAD", merged.ldPreload.joinToString(" "))
             .replace("\$EXTRA_ENV", merged.env.joinToString(" "))
 
-        // 写入临时脚本文件，绕过 PTY 单行 4096 字节限制
-        val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}.sh")
-        bootScript.writeText(resolvedBootCmd)
-        Global.sendCommand("source ${bootScript.absolutePath} && rm ${bootScript.absolutePath}")
+        if (Global.rootAvailable) {
+            // chroot 模式：直接通过 chroot 进入容器，无需 proot 包装
+            val app = getApplication<Application>()
+            val containerDir = "${app.dataDir.absolutePath}/$code"
+            val suPath = Global.suPath
+            if (suPath.isNotEmpty()) {
+                // 检查是否有 chroot 专用启动命令，否则用默认 shell
+                val chrootBootCmd = config["chroot_boot_command"] as? String
+                    ?: "/bin/bash --login"
+                val chrootCmd = "$suPath -c \"chroot $containerDir $chrootBootCmd\""
+                // 写入临时脚本文件，避免 PTY 行长度限制
+                val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}_chroot.sh")
+                bootScript.writeText(chrootCmd)
+                Global.sendCommand("source ${bootScript.absolutePath} && rm ${bootScript.absolutePath}")
+            }
+        } else {
+            // proot 模式：写入临时脚本文件执行
+            val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}.sh")
+            bootScript.writeText(resolvedBootCmd)
+            Global.sendCommand("source ${bootScript.absolutePath} && rm ${bootScript.absolutePath}")
+        }
 
         for (cmd in merged.postStartContainerCommands) {
             Global.sendCommand(cmd)

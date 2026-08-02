@@ -559,9 +559,10 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 $BIN_DIR/rm $CACHE_DIR/rootfs.tar.zst $CACHE_DIR/tmp1 $CACHE_DIR/tmp2 $CACHE_DIR/tmp3
             """.trimIndent()
             Global.setupEnvironment()
+            val chrootMode = Global.rootAvailable
             Global.sendCommand("""
                 $install
-                $androidUidGidThings
+                ${if (chrootMode) "" else "$androidUidGidThings"}
                 $clean
             """.trimIndent())
             Global.sendCommand("exit")

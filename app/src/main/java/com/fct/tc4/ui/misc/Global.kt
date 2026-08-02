@@ -80,6 +80,23 @@ object Global {
         get() = sharedPrefs.getBoolean("auto_check_update", true)
         set(value) = sharedPrefs.edit { putBoolean("auto_check_update", value) }
 
+    // ==================== Root 权限 ====================
+
+    /** 是否已通过 root 检测 */
+    var rootCheckDone: Boolean
+        get() = sharedPrefs.getBoolean("root_check_done", false)
+        set(value) = sharedPrefs.edit { putBoolean("root_check_done", value) }
+
+    /** root 是否可用 */
+    var rootAvailable: Boolean
+        get() = sharedPrefs.getBoolean("root_available", false)
+        set(value) = sharedPrefs.edit { putBoolean("root_available", value) }
+
+    /** su 二进制路径 */
+    var suPath: String
+        get() = sharedPrefs.getString("su_path", "") ?: ""
+        set(value) = sharedPrefs.edit { putString("su_path", value) }
+
     lateinit var appContext: Context
 
     var terminalSession: TerminalSession? = null
