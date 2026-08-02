@@ -1,11 +1,14 @@
 [English](README.md)
 
-# Tiny Container
+# Tiny Container (Chroot)
 
 > [!NOTE]
 > Linux 很强大。Linux 也可以易于使用。
 
-### 安装小小容器（Tiny Container），立刻获得一个 Linux 电脑*，在你的手机/平板上使用 PC 软件！
+### 安装 Tiny Container (Chroot)，立刻获得一个 Linux 电脑*，在你的手机/平板上使用 PC 软件！
+
+> [!IMPORTANT]
+> 此变体使用 chroot 替代 proot。需要 root 权限。
 
 ![预览图加载失败](doc/tc4.png)
 

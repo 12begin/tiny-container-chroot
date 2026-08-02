@@ -1,11 +1,14 @@
 [中文版](README.zh.md)
 
-# Tiny Container
+# Tiny Container (Chroot)
 
 > [!NOTE]
 > Linux is powerful. Linux can also be easy to use.
 
 ### Install Tiny Container and instantly get a Linux computer* — run PC software right on your phone or tablet!
+
+> [!IMPORTANT]
+> This variant uses chroot instead of proot. Root permission is required.
 
 ![Preview image](doc/tc4.png)
 
