@@ -522,9 +522,12 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
     /** 通过 execShell 提取 .tiny.yaml */
     private suspend fun extractConfigViaExecShell(app: Application, cacheDir: String): Boolean {
         return try {
+            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             execShell {
                 Global.setupEnvironment()
-                Global.sendCommand("tar -xf \"$cacheDir/rootfs.tar.zst\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
+                // 先解压 zstd，再用 tar 提取（避免 tar 不支持 zstd 的问题）
+                Global.sendCommand("$bootstrapDir/zstd -d -f \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
+                Global.sendCommand("$bootstrapDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
                 Global.sendCommand("exit")
             }
             File(app.cacheDir, ".tiny.yaml").exists()
@@ -536,18 +539,25 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
     /** 通过 ProcessBuilder 提取 .tiny.yaml（备用方案） */
     private fun extractConfigViaProcessBuilder(app: Application, cacheDir: String) {
         try {
-            val tarBin = "${app.filesDir.absolutePath}/bootstrap/bin/tar"
-            val pb = ProcessBuilder(
-                tarBin, "-xf", "${cacheDir}/rootfs.tar.zst",
-                "-C", cacheDir, ".tiny.yaml"
-            )
-            pb.environment().putAll(mapOf(
-                "LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"
-            ))
-            val process = pb.start()
-            process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val env = mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib")
+
+            // 1. 先解压 zstd
+            val zstd = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f",
+                "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
+            zstd.environment().putAll(env)
+            zstd.start().waitFor(120, java.util.concurrent.TimeUnit.SECONDS)
+
+            // 2. 再用 tar 提取 .tiny.yaml
+            val tar = ProcessBuilder("$bootstrapDir/tar", "-xf",
+                "$cacheDir/rootfs.tar", "-C", cacheDir, ".tiny.yaml")
+            tar.environment().putAll(env)
+            tar.start().waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+
+            // 清理临时 tar 文件
+            File(cacheDir, "rootfs.tar").delete()
         } catch (_: Exception) {
-            // 忽略，留给后续文件存在性检查
+            File(cacheDir, "rootfs.tar").delete()
         }
     }
 
