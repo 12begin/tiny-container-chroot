@@ -38,6 +38,7 @@ import com.fct.tc4.databinding.Tc4FragmentSettingsBinding
 import com.fct.tc4.databinding.Tc4SettingsActionItemBinding
 import com.fct.tc4.databinding.Tc4SettingsSwitchItemBinding
 import com.fct.tc4.ui.misc.LauncherShortcutDialogFragment
+import com.fct.tc4.ui.misc.Global
 import com.google.android.material.listitem.ListItemViewHolder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch

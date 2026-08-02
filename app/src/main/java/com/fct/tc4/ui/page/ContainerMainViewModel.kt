@@ -26,6 +26,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.fct.tc4.TinyAudio
+import com.fct.tc4.ChrootManager
 import com.fct.tc4.TinyMicrophone
 import com.fct.tc4.R
 import com.fct.tc4.ui.misc.ConfigManager
