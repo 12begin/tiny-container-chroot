@@ -5,24 +5,49 @@
 name: 构建 APK
 
 on:
-  workflow_dispatch:           # 纯手动触发
+  workflow_dispatch:
     inputs:
-      build_type:
-        description: '构建类型（debug/release/all）'
+      variant:
+        description: '构建变体'
         required: true
         default: 'all'
         type: choice
-        options: [all, debug, release]
-      rootfs:
-        description: '内置 rootfs 变体'
+        options: [all, xfce, gxde, clean]
+      build_type:
+        description: 'APK 类型（debug/release/all）'
         required: true
-        default: 'none'
+        default: 'release'
         type: choice
-        options: [none, xfce-zh, gxde-zh]
+        options: [debug, release, all]
 
 jobs:
-  build:
+  setup-matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          case "${{ github.event.inputs.variant }}" in
+            all)
+              echo 'matrix={"include":[{"rootfs":"xfce-zh","suffix":"xfce-zh"},{"rootfs":"xfce-en","suffix":"xfce-en"},{"rootfs":"gxde-zh","suffix":"gxde-zh"},{"rootfs":"gxde-en","suffix":"gxde-en"},{"rootfs":"none","suffix":"clean"}]}' >> $GITHUB_OUTPUT
+              ;;
+            xfce)
+              echo 'matrix={"include":[{"rootfs":"xfce-zh","suffix":"xfce-zh"},{"rootfs":"xfce-en","suffix":"xfce-en"}]}' >> $GITHUB_OUTPUT
+              ;;
+            gxde)
+              echo 'matrix={"include":[{"rootfs":"gxde-zh","suffix":"gxde-zh"},{"rootfs":"gxde-en","suffix":"gxde-en"}]}' >> $GITHUB_OUTPUT
+              ;;
+            clean)
+              echo 'matrix={"include":[{"rootfs":"none","suffix":"clean"}]}' >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+  build:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,20 +79,18 @@ jobs:
           unzip -q jniLibs.zip -d app/src/main/jniLibs/arm64-v8a/
           rm jniLibs.zip
 
-      - name: 下载 rootfs（可选）
-        if: ${{ github.event.inputs.rootfs != 'none' }}
-        env:
-          ROOTFS_VARIANT: ${{ github.event.inputs.rootfs }}
+      - name: 下载 rootfs
+        if: ${{ matrix.rootfs != 'none' }}
         run: |
-          case "${ROOTFS_VARIANT}" in
+          case "${{ matrix.rootfs }}" in
             xfce-zh) FILE="xfce-zh-20260627-001457.tar.zst" ;;
             xfce-en) FILE="xfce-en-20260628-072838.tar.zst" ;;
             gxde-zh) FILE="gxde-zh-20260626-110317.tar.zst" ;;
             gxde-en) FILE="gxde-en-20260626-110344.tar.zst" ;;
-            *)       echo "Unknown variant: ${ROOTFS_VARIANT}"; exit 1 ;;
           esac
           curl -sL -o app/src/main/assets/rootfs.tar.zst \
             "https://github.com/tiny-computer/images/releases/download/260627/${FILE}"
+          ls -lh app/src/main/assets/rootfs.tar.zst
 
       - name: 解码签名密钥
         env:
@@ -83,19 +106,38 @@ jobs:
           echo "KEY_PASSWORD=$KEY_PASS" >> $GITHUB_ENV
 
       - name: 构建 APK
+        env:
+          APK_SUFFIX: ${{ matrix.suffix }}
         run: |
           case "${{ github.event.inputs.build_type }}" in
             debug)   ./gradlew assembleDebug ;;
             release) ./gradlew assembleRelease ;;
             all)     ./gradlew assembleDebug assembleRelease --parallel ;;
           esac
+          # 重命名 APK，添加变体名
+          for apk in app/build/outputs/apk/release/*.apk; do
+            [ -f "$apk" ] || continue
+            dir=$(dirname "$apk")
+            base=$(basename "$apk")
+            mv "$apk" "${dir}/tiny-container-chroot-${APK_SUFFIX}-${base}"
+          done
+          for apk in app/build/outputs/apk/debug/*.apk; do
+            [ -f "$apk" ] || continue
+            dir=$(dirname "$apk")
+            base=$(basename "$apk")
+            mv "$apk" "${dir}/tiny-container-chroot-${APK_SUFFIX}-${base}"
+          done
 
       - name: 上传 Debug APK
         if: github.event.inputs.build_type != 'release'
         uses: actions/upload-artifact@v4
-        with: { name: TinyContainerChroot-Debug-APK, path: app/build/outputs/apk/debug/*.apk }
+        with:
+          name: tiny-container-chroot-${{ matrix.suffix }}-debug
+          path: app/build/outputs/apk/debug/*.apk
 
       - name: 上传 Release APK
         if: github.event.inputs.build_type != 'debug'
         uses: actions/upload-artifact@v4
-        with: { name: TinyContainerChroot-Release-APK, path: app/build/outputs/apk/release/*.apk }
+        with:
+          name: tiny-container-chroot-${{ matrix.suffix }}
+          path: app/build/outputs/apk/release/*.apk
