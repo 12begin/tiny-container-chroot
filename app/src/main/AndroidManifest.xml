@@ -40,7 +40,7 @@
 
             <!-- ShortcutManager 快捷方式启动 -->
             <intent-filter>
-                <action android:name="com.fct.tc4.action.SHORTCUT" />
+                <action android:name="com.fct.tc4.chroot.action.SHORTCUT" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

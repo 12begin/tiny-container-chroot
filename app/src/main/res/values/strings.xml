@@ -1,5 +1,5 @@
 <resources>
-    <string name="tc4_app_name">Tiny Container</string>
+    <string name="tc4_app_name">Tiny Container (Chroot)</string>
 
     <!-- ==================== Common Buttons ==================== -->
     <string name="tc4_btn_ok">OK</string>

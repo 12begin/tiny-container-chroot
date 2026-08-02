@@ -392,6 +392,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        const val ACTION_SHORTCUT = "com.fct.tc4.action.SHORTCUT"
+        const val ACTION_SHORTCUT = "com.fct.tc4.chroot.action.SHORTCUT"
     }
 }

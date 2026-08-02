@@ -35,7 +35,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.fct.tc4"
+        applicationId = "com.fct.tc4.chroot"
         minSdk = 28
         targetSdk = 37
         versionCode = 1
