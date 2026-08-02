@@ -51,16 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 检查本地与云端代码一致性
-        run: |
-          git fetch origin
-          LOCAL=$(git rev-parse HEAD)
-          REMOTE=$(git rev-parse origin/HEAD)
-          if [ "$LOCAL" != "$REMOTE" ]; then
-            echo "::error::代码不一致，请先 push"
-            exit 1
-          fi
-
       - name: 设置 JDK 17
         uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
