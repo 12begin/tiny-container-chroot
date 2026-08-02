@@ -81,7 +81,7 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_mount"
-                                style="@style/Widget.Material3.Button.Filled"
+                                style="@style/Widget.Material3.Button"
                                 android:layout_width="0dp"
                                 android:layout_height="48dp"
                                 android:layout_weight="1"
@@ -90,7 +90,7 @@
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btn_unmount"
-                                style="@style/Widget.Material3.Button.Outlined"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
                                 android:layout_width="0dp"
                                 android:layout_height="48dp"
                                 android:layout_weight="1"
