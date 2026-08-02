@@ -1,66 +1,66 @@
-[中文版](README.zh.md)
+[English](README.zh.md)
 
 # Tiny Container (Chroot)
 
 > [!NOTE]
-> Linux is powerful. Linux can also be easy to use.
+> Linux 很强大。Linux 也可以易于使用。
 
-This is a chroot variant of [Tiny Container](https://github.com/Cateners/tiny_container).  
-The original uses proot and works without root. This one uses chroot and requires root.
+这是 [Tiny Container](https://github.com/Cateners/tiny_container) 的 chroot 变体。  
+原版用 proot 运行容器，不需要 root。这个变体用 chroot，需要 root。
 
-### Why chroot?
+### 为什么做 chroot？
 
-The original author [stated clearly](https://github.com/Cateners/tiny_container) that they won't support chroot:
+原作者[明确说过](https://github.com/Cateners/tiny_container)不会支持 chroot：
 
-> "I have no experience developing apps that use root (and managing root seems like a huge hassle), so I won't be supporting chroot."
+> "我从没有开发使用 root 的应用的经验（而且感觉管理 root 会非常麻烦），所以我不会支持 chroot。"
 
-Fair point. For most users proot works fine. But if your device is already rooted, chroot runs faster and has fewer quirks. So here we are.
+说得对。对大多数用户来说 proot 够用了。但设备都 root 了，chroot 跑得更快、兼容问题更少，所以就做了。
 
-### What's different
+### 区别
 
-- chroot instead of proot. Better performance, fewer compatibility issues.
-- Full filesystem mount (proc, sys, dev, dev/pts)
-- Root detection on first launch
-- Root permission is **required**. No root? Use the [original version](https://github.com/Cateners/tiny_container).
+- 用 chroot 代替 proot。性能更好，兼容性问题更少。
+- 完整挂载文件系统（proc、sys、dev、dev/pts）
+- 首次启动自动检测 root 权限
+- **需要 root 权限**。没有 root？请用[原版](https://github.com/Cateners/tiny_container)。
 
-Everything else is the same as the original. See below.
+其他功能与原版一致。往下看。
 
 ---
 
-## Features
+## 特点
 
-### Designed for ordinary users. You don't need to know Linux...
+### 为普通用户设计。你不需要懂 Linux......
 
-1. Install the app and open it — no manual steps required*. After a 5-minute initialization, you'll be at the desktop.
-2. Installation commands for common software are already prepared for you. Just tap, and the app handles the rest.
-3. The UI is designed to be as friendly as possible, not just "good enough to have a UI". AI-powered translations are available in many languages. Even RTL layout is supported!
-    - (Admittedly, I don't use RTL myself and can't verify the AI translations, so no guarantees on accuracy! But better to have it than not, right?)
+1. 安装软件并打开，你不需要进行任何操作*，5 分钟的初始化后立刻进入电脑界面。
+2. 常用软件的安装命令已为你准备好。点击，然后软件为你完成剩下的工作。
+3. 软件的界面尽可能友好地设计了，而不是"有个界面就行"。让 AI 加上了许多语言的翻译。甚至支持 rtl 布局！
+    - （虽然，因为我并不使用 rtl，也看不懂 AI 的翻译，不知道准不准确！但是有总比没有好吧？）
 
-### Also a toy for geeks — built-in terminal, rich container configuration options!
+### 同时也是给极客的玩具，内置终端、拥有丰富的容器配置选项！
 
-4. Containers and configurations can be freely shared!
-5. Cutting-edge features from the Termux community are ready to go! No need to learn how to install containers, start graphical sessions, configure audio, and all that tedious stuff. The following features work out of the box:
-    - Import containers via the import button, with graphical session startup included (if supported);
-    - Built-in AVNC and Termux:X11 frontends — no extra app installation needed;
-    - Audio and microphone forwarding;
-    - virglrenderer and turnip+zink graphics acceleration...
-6. Features only possible in a single app!
-    - Audio and VNC transmitted over unix sockets, bypassing the network stack;
-    - Browse container files via the SAF file manager;
-    - Add .desktop files or even arbitrary commands as shortcuts to your Android launcher!
-7. Won't conflict with Termux!
+4. 容器和配置可以随意分享！
+5. 取自 Termux 社区的前沿功能已准备就绪！你不需要学习如何安装容器、启动图形界面、配置音频等等繁琐工作。以下功能是即开即用的：
+    - 安装容器通过导入按钮，图形界面的启动已包含在内（如果容器支持）；
+    - 软件内置 AVNC 和 Termux:X11 前端，你不需要额外安装软件；
+    - 音频和麦克风转发；
+    - virglrenderer 和 turnip+zink 图形加速...
+6. 单软件才方便做到的功能！
+    - 音频和 VNC 通过 unix socket 传输，不经过网络栈；
+    - 通过 saf 文件管理器浏览容器文件；
+    - 可以将 .desktop 文件，甚至一般命令作为快捷方式放置到安卓启动器！
+7. 不会和 Termux 冲突！
 
-## Download
+## 下载
 
-APKs are available on the [releases](https://github.com/12begin/tiny-container-chroot/releases) page.
+apk 安装包见 [releases](https://github.com/12begin/tiny-container-chroot/releases) 页面
 
-## Build
+## 编译
 
-After cloning the repository, download the prebuilt library jniLibs.zip from the [original releases](https://github.com/Cateners/tiny_container/releases) page and extract it to app/src/main/jniLibs/arm64-v8a. Then you can open and build the project normally in Android Studio.  
-For automatic container installation on first launch, rename your container to rootfs.tar.zst and place it in app/src/main/assets.  
-For container information, check out the [images repo](https://github.com/tiny-computer/images).
+克隆仓库后，在[原版 release](https://github.com/Cateners/tiny_container/releases) 页下载预编译库 jniLibs.zip 并解压到 app/src/main/jniLibs/arm64-v8a，然后就可以正常在 Android Studio 打开项目编译了。  
+如果要做到启动时自动安装容器的效果，可把容器重命名为 rootfs.tar.zst 并放到 app/src/main/assets。  
+容器信息见 [images 仓库](https://github.com/tiny-computer/images)。
 
-## Acknowledgments
+## 致谢
 
-Thanks to [Caten Hu](https://github.com/Cateners) for the original Tiny Container project.  
-Thanks to the [termux](https://github.com/termux) community, [tmoe](https://github.com/2moe/tmoe), [avnc](https://github.com/gujjwal00/avnc), and all the open-source projects that made this possible.
+感谢 [Caten Hu](https://github.com/Cateners) 的原版 Tiny Container 项目。  
+感谢 [termux](https://github.com/termux) 社区、[tmoe](https://github.com/2moe/tmoe)、[avnc](https://github.com/gujjwal00/avnc) 以及所有让这一切成为可能的开源项目。
