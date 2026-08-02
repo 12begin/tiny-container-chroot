@@ -38,8 +38,8 @@ android {
         applicationId = "com.fct.tc4.chroot"
         minSdk = 28
         targetSdk = 37
-        versionCode = 1
-        versionName = "4.0.0"
+        versionCode = 12
+        versionName = "0.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters.add("arm64-v8a")
