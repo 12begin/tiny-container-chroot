@@ -455,7 +455,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 }
 
                 // 直接安装
-                performInstall(code, config)
+                performInstall(code, finalConfig)
 
                 Global.autoLaunch = code
                 Global.isFirstLaunchDone = true
