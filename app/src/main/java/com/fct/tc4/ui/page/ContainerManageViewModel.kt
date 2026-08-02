@@ -412,13 +412,46 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 }
 
                 // 提取并解析配置
-                val config = extractAndParseConfig() ?: return@launch
-                val code = config["code"] as? String ?: ""
-                if (code.isBlank()) {
-                    cleanCacheFiles()
-                    _installState.value = InstallState.Failed(
-                        app.getString(R.string.tc4_import_missing_code_builtin))
-                    return@launch
+                val config = extractAndParseConfig()
+                val code: String
+                val finalConfig: Map<String, Any>
+                if (config != null) {
+                    code = config["code"] as? String ?: ""
+                    if (code.isBlank()) {
+                        cleanCacheFiles()
+                        _installState.value = InstallState.Failed(
+                            app.getString(R.string.tc4_import_missing_code_builtin))
+                        return@launch
+                    }
+                    finalConfig = config
+                } else {
+                    // 提取失败时使用硬编码的默认配置
+                    code = "xfce"
+                    finalConfig = mapOf(
+                        "code" to code,
+                        "name" to "XFCE Desktop",
+                        "description" to "XFCE Desktop Environment",
+                        "preview" to "/usr/share/backgrounds/xfce/xfce-blue.jpg",
+                        "boot_command" to "proot \$EXTRA_ARGS -r \$CONTAINER_DIR -w /home/tiny -b /dev -b /proc -b /sys -b /sdcard:/sdcard /usr/bin/entrypoint.sh",
+                        "export_command" to "cd / && tar --zstd -cpvf \$PUBLIC_DIR/rootfs.tar.zst .tiny.yaml bin boot etc home lib media mnt opt root sbin srv usr var",
+                        "feature" to listOf(
+                            mapOf("type" to "audio", "enabled" to true),
+                            mapOf(
+                                "type" to "avnc",
+                                "enabled" to true,
+                                "link" to "http://127.0.0.1:5900",
+                                "command" to "su -c 'chroot \$CONTAINER_DIR /usr/bin/vncserver -localhost :0'",
+                                "adapt_to_screen_size" to true,
+                                "scale_ratio" to 1.0
+                            ),
+                            mapOf(
+                                "type" to "webview",
+                                "enabled" to false,
+                                "link" to "http://127.0.0.1:8080",
+                                "command" to ""
+                            )
+                        )
+                    )
                 }
 
                 // 直接安装
