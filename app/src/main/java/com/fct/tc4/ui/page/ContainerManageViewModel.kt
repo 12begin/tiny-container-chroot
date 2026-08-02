@@ -518,6 +518,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         _installState.value = InstallState.ExtractingConfig
 
+        // 优先从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
+        try {
+            app.assets.open(".tiny.yaml").use { input ->
+                val content = input.bufferedReader().readText()
+                @Suppress("UNCHECKED_CAST")
+                val config = Yaml().load<Map<String, Any>>(content)
+                if (config != null && config["code"] is String) {
+                    return config
+                }
+            }
+        } catch (_: Exception) {
+            // assets 中没有 .tiny.yaml，继续尝试从 rootfs 提取
+        }
+
         // 尝试用 execShell + tar 提取 .tiny.yaml
         val cacheDir = app.cacheDir.absolutePath
         val rootfsFile = File(app.cacheDir, "rootfs.tar.zst")
