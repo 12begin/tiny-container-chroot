@@ -59,8 +59,15 @@ jobs:
         env:
           ROOTFS_VARIANT: ${{ github.event.inputs.rootfs }}
         run: |
+          case "${ROOTFS_VARIANT}" in
+            xfce-zh) FILE="xfce-zh-20260627-001457.tar.zst" ;;
+            xfce-en) FILE="xfce-en-20260628-072838.tar.zst" ;;
+            gxde-zh) FILE="gxde-zh-20260626-110317.tar.zst" ;;
+            gxde-en) FILE="gxde-en-20260626-110344.tar.zst" ;;
+            *)       echo "Unknown variant: ${ROOTFS_VARIANT}"; exit 1 ;;
+          esac
           curl -sL -o app/src/main/assets/rootfs.tar.zst \
-            "https://github.com/tiny-computer/images/releases/download/260627/${ROOTFS_VARIANT}.tar.zst"
+            "https://github.com/tiny-computer/images/releases/download/260627/${FILE}"
 
       - name: 解码签名密钥
         env:
