@@ -617,13 +617,13 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("cacheDir: $cacheDir")
         appendLog("containerDir: $containerDir")
         appendLog("rootfs 文件大小: ${cacheFile.length()} 字节")
+        appendLog("正在解压（约900MB，可能需要2-3分钟）...")
 
-        // 使用 execShell 解压，所有命令用 && 连接成一条，避免多行命令问题
+        // 使用 execShell 解压，所有命令用 && 连接成一条
         var extracted = false
-        execShell {
+        execShell(120_000) { // 2分钟超时
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            // 先设置环境变量，再执行 tar 解压，然后清理，最后 exit
             Global.sendCommand("export LD_LIBRARY_PATH=$bLib && $bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir && rm -f $cacheDir/rootfs.tar.zst && exit")
         }
         extracted = File(containerDir, "etc").exists()
@@ -687,13 +687,23 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
     }
 
     /** 在 terminal session 中执行命令，等待 session 结束后返回 exitCode */
-    private suspend fun execShell(block: () -> Unit): Int = withContext(Dispatchers.Main) {
+    private suspend fun execShell(timeoutMs: Long = 0, block: () -> Unit): Int = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { cont ->
             try {
                 Global.newSession(onFinished = { exitCode ->
                     if (cont.isActive) cont.resume(exitCode)
                 })
                 block()
+                // 如果设置了超时，在超时后取消
+                if (timeoutMs > 0) {
+                    kotlinx.coroutines.launch {
+                        kotlinx.coroutines.delay(timeoutMs)
+                        if (cont.isActive) {
+                            appendLog("execShell 超时（${timeoutMs}ms）")
+                            cont.resume(-1)
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 appendLog("execShell 异常: ${e.message}")
                 if (cont.isActive) cont.resume(-1)
