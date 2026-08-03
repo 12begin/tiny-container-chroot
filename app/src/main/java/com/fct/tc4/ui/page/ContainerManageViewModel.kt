@@ -641,7 +641,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         // 先用 execShell 创建 bootstrap symlink，再解压
         appendLog("正在创建 bootstrap symlink...")
         execShell(30_000) {
-            Global.setupBootstrapIfRequired()
+            val fDir = app.filesDir.absolutePath
+            // 直接创建 symlink，不依赖 shouldResetBootstrap
+            Global.sendCommand("mkdir -p $fDir/bootstrap/bin $fDir/bootstrap/lib")
+            Global.sendCommand("ln -sf $fDir/applib/lib__bin__busybox__.so $fDir/bootstrap/bin/busybox")
+            Global.sendCommand("ln -sf $fDir/applib/lib__bin__busybox__.so $fDir/bootstrap/bin/sh")
+            Global.sendCommand("ln -sf $fDir/applib/lib__bin__tar__.so $fDir/bootstrap/bin/tar")
+            Global.sendCommand("ln -sf $fDir/applib/lib__bin__zstd__.so $fDir/bootstrap/bin/zstd")
+            Global.sendCommand("ln -sf $fDir/applib/lib__lib__libzstd.so.1.5.7__.so $fDir/bootstrap/lib/libzstd.so.1")
             Global.sendCommand("exit")
         }
         appendLog("创建后 bDir 内容: ${File(bDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
