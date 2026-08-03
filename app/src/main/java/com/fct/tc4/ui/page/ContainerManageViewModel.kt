@@ -622,27 +622,18 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         // EXTRACTING_ROOTFS
         dir.mkdirs()
-        val suPath = Global.suPath
-        if (suPath.isNotEmpty()) {
+        execShell {
             val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
             val cacheDir = app.cacheDir.absolutePath
-            val containerDir = "$dir"
+            val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            // 通过 sh -c 执行 tar，设置 LD_LIBRARY_PATH
-            try {
-                val cmd = "LD_LIBRARY_PATH=$bootstrapLib $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
-                val pb = ProcessBuilder("sh", "-c", cmd)
-                pb.redirectErrorStream(true)
-                val proc = pb.start()
-                proc.waitFor()
-            } catch (e: Exception) {
-                android.util.Log.w("Install", "tar exception: ${e.message}")
-            }
+            // 先用 setupEnvironment 设置 LD_LIBRARY_PATH
+            Global.setupEnvironment()
+            // 再用绝对路径执行 tar，不依赖 shell 变量
+            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir 2>&1")
             // 清理缓存
-            try {
-                ProcessBuilder("rm", "-f", "$cacheDir/rootfs.tar.zst").start().waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
-            } catch (_: Exception) {}
+            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst 2>&1")
+            Global.sendCommand("exit")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
