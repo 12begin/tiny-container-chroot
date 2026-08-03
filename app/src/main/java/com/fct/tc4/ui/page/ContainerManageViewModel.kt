@@ -708,13 +708,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 block()
                 // 如果设置了超时，在超时后取消
                 if (timeoutMs > 0) {
-                    withContext(Dispatchers.Main) {
-                        kotlinx.coroutines.delay(timeoutMs)
-                        if (cont.isActive) {
-                            appendLog("execShell 超时（${timeoutMs}ms）")
-                            cont.resume(-1)
-                        }
-                    }
+                    // 用线程池实现超时，不依赖协程
+                    Thread {
+                        try {
+                            Thread.sleep(timeoutMs)
+                            if (cont.isActive) {
+                                appendLog("execShell 超时（${timeoutMs}ms）")
+                                cont.resume(-1)
+                            }
+                        } catch (_: InterruptedException) {}
+                    }.start()
                 }
             } catch (e: Exception) {
                 appendLog("execShell 异常: ${e.message}")
