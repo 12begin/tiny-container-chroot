@@ -411,8 +411,17 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     }
                 }
 
-                // 提取并解析配置
-                val config = extractAndParseConfig()
+                // 从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
+                val config = try {
+                    app.assets.open(".tiny.yaml").use { input ->
+                        val content = input.bufferedReader().readText()
+                        @Suppress("UNCHECKED_CAST")
+                        Yaml().load<Map<String, Any>>(content)
+                    }
+                } catch (_: Exception) {
+                    // assets 中没有 .tiny.yaml，尝试从 rootfs 提取
+                    extractAndParseConfig()
+                }
                 val code: String
                 val finalConfig: Map<String, Any>
                 if (config != null) {
@@ -518,20 +527,6 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         _installState.value = InstallState.ExtractingConfig
 
-        // 优先从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
-        try {
-            app.assets.open(".tiny.yaml").use { input ->
-                val content = input.bufferedReader().readText()
-                @Suppress("UNCHECKED_CAST")
-                val config = Yaml().load<Map<String, Any>>(content)
-                if (config != null && config["code"] is String) {
-                    return config
-                }
-            }
-        } catch (_: Exception) {
-            // assets 中没有 .tiny.yaml，继续尝试从 rootfs 提取
-        }
-
         // 尝试用 execShell + tar 提取 .tiny.yaml
         val cacheDir = app.cacheDir.absolutePath
         val rootfsFile = File(app.cacheDir, "rootfs.tar.zst")
@@ -571,7 +566,6 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         return try {
             val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             execShell {
-                Global.setupEnvironment()
                 // 先解压 zstd，再用 tar 提取（避免 tar 不支持 zstd 的问题）
                 Global.sendCommand("$bootstrapDir/zstd -d -f \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
                 Global.sendCommand("$bootstrapDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
