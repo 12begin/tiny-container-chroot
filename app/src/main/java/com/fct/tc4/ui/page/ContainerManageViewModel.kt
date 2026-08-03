@@ -404,16 +404,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val app = getApplication<Application>()
             try {
                 val cacheFile = File(app.cacheDir, "rootfs.tar.zst")
+                val code = "xfce"
 
-                // 从 assets 复制到缓存，先进入 Installing 状态以便显示日志
+                // 先进入 Installing 状态，显示日志弹窗
                 _installState.value = InstallState.Installing(
-                    code = "xfce",
+                    code = code,
                     currentStep = InstallStep.DELETING_OLD,
                     startTimeMillis = System.currentTimeMillis(),
                     containerSizeBytes = 0L,
                     webpage = null,
-                    log = "开始复制 rootfs 到缓存..."
+                    log = "开始安装容器..."
                 )
+
+                // 从 assets 复制到缓存
+                appendLog("开始复制 rootfs 到缓存...")
                 appendLog("assets 中 rootfs.tar.zst 是否存在: ${try { app.assets.open("rootfs.tar.zst").use { true } } catch (_: Exception) { false }}")
                 appendLog("assets 中 .tiny.yaml 是否存在: ${try { app.assets.open(".tiny.yaml").use { true } } catch (_: Exception) { false }}")
                 app.assets.open("rootfs.tar.zst").use { input ->
@@ -423,60 +427,32 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 }
                 appendLog("复制完成，缓存文件大小: ${cacheFile.length()} 字节")
 
-                // 从 assets 读取预置的 .tiny.yaml
+                // 读取配置
+                appendLog("读取 .tiny.yaml 配置...")
                 val config = try {
                     app.assets.open(".tiny.yaml").use { input ->
                         val content = input.bufferedReader().readText()
                         @Suppress("UNCHECKED_CAST")
                         Yaml().load<Map<String, Any>>(content)
                     }
-                } catch (_: Exception) {
-                    // assets 中没有 .tiny.yaml，尝试从 rootfs 提取
-                    extractAndParseConfig()
+                } catch (e: Exception) {
+                    appendLog("读取配置失败: ${e.message}")
+                    null
                 }
-                val code: String
-                val finalConfig: Map<String, Any>
-                if (config != null) {
-                    code = config["code"] as? String ?: ""
-                    if (code.isBlank()) {
-                        cleanCacheFiles()
-                        _installState.value = InstallState.Failed(
-                            app.getString(R.string.tc4_import_missing_code_builtin))
-                        return@launch
-                    }
-                    finalConfig = config
-                } else {
-                    // 提取失败时使用硬编码的默认配置
-                    code = "xfce"
-                    finalConfig = mapOf(
-                        "code" to code,
-                        "name" to "XFCE Desktop",
-                        "description" to "XFCE Desktop Environment",
-                        "preview" to "/usr/share/backgrounds/xfce/xfce-blue.jpg",
-                        "chroot_boot_command" to "env -i DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color su - tiny /bin/bash --login",
-                        "feature" to listOf(
-                            mapOf("type" to "audio", "enabled" to true),
-                            mapOf(
-                                "type" to "avnc",
-                                "enabled" to true,
-                                "link" to "http://127.0.0.1:5900",
-                                "command" to "su -c 'chroot \$CONTAINER_DIR /usr/bin/vncserver -localhost :0'",
-                                "adapt_to_screen_size" to true,
-                                "scale_ratio" to 1.0
-                            ),
-                            mapOf(
-                                "type" to "webview",
-                                "enabled" to false,
-                                "link" to "http://127.0.0.1:8080",
-                                "command" to ""
-                            )
-                        )
-                    )
+                if (config == null) {
+                    appendLog("配置为空，使用硬编码默认配置")
                 }
 
                 // 直接安装
-                performInstall(code, finalConfig)
+                performInstall(code, config ?: mapOf(
+                    "code" to code,
+                    "name" to "XFCE Desktop",
+                    "description" to "XFCE Desktop Environment",
+                    "chroot_boot_command" to "env -i DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color su - tiny /bin/bash --login",
+                    "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
+                ))
 
+                appendLog("安装完成！")
                 Global.autoLaunch = code
                 Global.isFirstLaunchDone = true
 
@@ -485,6 +461,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     code = code
                 )
             } catch (e: Exception) {
+                appendLog("安装失败: ${e.message}")
                 cleanCacheFiles()
                 _installState.value = InstallState.Failed(
                     app.getString(R.string.tc4_import_auto_failed, e.message ?: ""))
