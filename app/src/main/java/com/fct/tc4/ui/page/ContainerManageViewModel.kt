@@ -634,13 +634,27 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val zstdPb = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
             zstdPb.environment().putAll(env)
             zstdPb.redirectErrorStream(true)
-            zstdPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            val zstdProc = zstdPb.start()
+            val zstdOut = zstdProc.inputStream.bufferedReader().readText()
+            val zstdExit = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            android.util.Log.i("Install", "zstd exit=$zstdExit out=$zstdOut")
 
             // 2. tar 提取
             val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
             tarPb.environment().putAll(env)
             tarPb.redirectErrorStream(true)
-            tarPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            val tarProc = tarPb.start()
+            val tarOut = tarProc.inputStream.bufferedReader().readText()
+            val tarExit = tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            android.util.Log.i("Install", "tar exit=$tarExit out=$tarOut")
+
+            // 验证解压结果
+            val etcDir = File(containerDir, "etc")
+            if (etcDir.exists() && etcDir.isDirectory) {
+                android.util.Log.i("Install", "extraction verified: ${etcDir.list()?.size} files in /etc")
+            } else {
+                android.util.Log.w("Install", "extraction may have failed: /etc not found in $containerDir")
+            }
 
             // 清理
             File("$cacheDir/rootfs.tar.zst").delete()
