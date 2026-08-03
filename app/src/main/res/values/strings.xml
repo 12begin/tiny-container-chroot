@@ -272,6 +272,13 @@
     <string name="tc4_container_initializing">Initializing container…</string>
     <string name="tc4_container_loading">Loading container list…</string>
     <string name="tc4_container_empty_with_link">No containers installed.\nDownload containers from the official page and import:\nhttps://www.github.com/tiny-computer/images/releases</string>
+    <string name="tc4_container_builtin_install">Install Built-in Container</string>
+    <string name="tc4_container_builtin_list_title">Built-in Containers</string>
+    <string name="tc4_container_builtin_xfce">XFCE Desktop (zh)</string>
+    <string name="tc4_container_builtin_xfce_en">XFCE Desktop (en)</string>
+    <string name="tc4_container_builtin_gxde">GXDE Desktop (zh)</string>
+    <string name="tc4_container_builtin_gxde_en">GXDE Desktop (en)</string>
+    <string name="tc4_container_builtin_clean">Command Line Only</string>
     <string name="tc4_update_available">New version %1$s is available! Please update.</string>
 
     <!-- ==================== More Helper Texts ==================== -->

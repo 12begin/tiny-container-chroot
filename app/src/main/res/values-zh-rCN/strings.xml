@@ -267,6 +267,13 @@
     <string name="tc4_container_initializing">正在初始化容器...</string>
     <string name="tc4_container_loading">正在加载容器列表...</string>
     <string name="tc4_container_empty_with_link">当前没有安装容器。\n请在官方容器页面下载容器并导入\nhttps://www.github.com/tiny-computer/images/releases</string>
+    <string name="tc4_container_builtin_install">安装内置容器</string>
+    <string name="tc4_container_builtin_list_title">内置容器</string>
+    <string name="tc4_container_builtin_xfce">XFCE 桌面（中文版）</string>
+    <string name="tc4_container_builtin_xfce_en">XFCE 桌面（英文版）</string>
+    <string name="tc4_container_builtin_gxde">GXDE 桌面（中文版）</string>
+    <string name="tc4_container_builtin_gxde_en">GXDE 桌面（英文版）</string>
+    <string name="tc4_container_builtin_clean">纯命令行</string>
     <string name="tc4_update_available">发现新版本 %1$s，建议更新</string>
 
     <!-- ==================== More Helper Texts ==================== -->

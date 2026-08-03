@@ -123,6 +123,14 @@ class ContainerManageFragment : Fragment() {
             viewModel.loadContainers()
         }
 
+        // 内置容器按钮
+        binding.btnInstallXfce.setOnClickListener {
+            viewModel.autoInstallBuiltInContainer()
+        }
+        binding.btnInstallClean.setOnClickListener {
+            viewModel.autoInstallBuiltInContainer()
+        }
+
         // ====== 页面状态 ======
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -131,7 +139,7 @@ class ContainerManageFragment : Fragment() {
                         is ContainerManagePageState.Loading -> {
                             binding.loadingGroup.visibility = View.VISIBLE
                             binding.errorGroup.visibility = View.GONE
-                            binding.emptyHint.visibility = View.GONE
+                            binding.emptyGroup.visibility = View.GONE
                             binding.viewpager.visibility = View.INVISIBLE
                             binding.indicator.visibility = View.INVISIBLE
                         }
@@ -140,12 +148,12 @@ class ContainerManageFragment : Fragment() {
                         binding.errorGroup.visibility = View.GONE
                         binding.viewpager.visibility = View.VISIBLE
                         binding.indicator.visibility = View.VISIBLE
-                        binding.emptyHint.visibility = if (viewModel.containers.value.isEmpty()) View.VISIBLE else View.GONE
+                        binding.emptyGroup.visibility = if (viewModel.containers.value.isEmpty()) View.VISIBLE else View.GONE
                     }
                         is ContainerManagePageState.Error -> {
                             binding.loadingGroup.visibility = View.GONE
                             binding.errorGroup.visibility = View.VISIBLE
-                            binding.emptyHint.visibility = View.GONE
+                            binding.emptyGroup.visibility = View.GONE
                             binding.errorMessage.text = state.message
                             binding.viewpager.visibility = View.INVISIBLE
                             binding.indicator.visibility = View.INVISIBLE
@@ -161,6 +169,10 @@ class ContainerManageFragment : Fragment() {
                 viewModel.containers.collect { list ->
                     val isIdle = viewModel.pageState.value is ContainerManagePageState.Idle
                     binding.emptyHint.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
+                    binding.builtinListTitle.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
+                    binding.btnInstallXfce.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
+                    binding.btnInstallClean.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
+                    binding.builtinFooter.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
                     adapter.submitList(list) {
                         binding.indicator.setupWithViewPager(binding.viewpager)
                         val pos = viewModel.selectedPosition.value
