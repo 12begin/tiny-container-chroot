@@ -118,6 +118,14 @@ class MainActivity : AppCompatActivity() {
             viewModel.hideLogPanel()
         }
 
+        binding.logPanel.btnCopyLog.setOnClickListener {
+            val content = binding.logPanel.logText.text.toString()
+            if (content.isNotBlank()) {
+                val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("log", content))
+            }
+        }
+
         binding.btnShowLog.setOnClickListener {
             viewModel.showLogPanel()
         }

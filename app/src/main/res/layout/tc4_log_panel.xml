@@ -24,6 +24,14 @@
             android:textAppearance="?attr/textAppearanceTitleSmall" />
 
         <ImageButton
+            android:id="@+id/btn_copy_log"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/actionModeCloseDrawable"
+            android:contentDescription="复制日志"
+            android:src="@drawable/content_copy_24dp_eaddff_fill0_wght400_grad0_opsz24" />
+
+        <ImageButton
             android:id="@+id/btn_close_log"
             android:layout_width="32dp"
             android:layout_height="32dp"
