@@ -131,6 +131,21 @@ class ContainerManageFragment : Fragment() {
             viewModel.autoInstallBuiltInContainer()
         }
 
+        // 根据实际内置的容器动态显示按钮
+        viewLifecycleOwner.lifecycleScope.launch {
+            val builtIn = Global.getBuiltInContainers()
+            if (builtIn.isNotEmpty()) {
+                binding.btnInstallXfce.text = getString(R.string.tc4_container_builtin_install)
+                binding.btnInstallClean.visibility = View.GONE
+                binding.builtinFooter.visibility = View.GONE
+            } else {
+                binding.btnInstallXfce.visibility = View.GONE
+                binding.btnInstallClean.visibility = View.GONE
+                binding.builtinListTitle.visibility = View.GONE
+                binding.builtinFooter.visibility = View.GONE
+            }
+        }
+
         // ====== 页面状态 ======
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {

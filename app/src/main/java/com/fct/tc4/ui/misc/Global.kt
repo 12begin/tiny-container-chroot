@@ -285,6 +285,23 @@ object Global {
         }
     }
 
+    /** 获取 assets 中内置的容器列表 */
+    fun getBuiltInContainers(): List<String> {
+        val list = mutableListOf<String>()
+        try {
+            appContext.assets.list("")?.forEach { name ->
+                if (name.endsWith(".tar.zst") && name != "rootfs.tar.zst") {
+                    list.add(name.removeSuffix(".tar.zst"))
+                }
+            }
+        } catch (_: Exception) {}
+        // 至少检查 rootfs.tar.zst 是否存在
+        if (hasBuiltInRootfs()) {
+            if (list.isEmpty()) list.add("rootfs")
+        }
+        return list
+    }
+
     /**
      * 获取某个容器的完整配置（快捷方式）。
      * 返回 null 表示该容器未安装或配置文件不存在。
