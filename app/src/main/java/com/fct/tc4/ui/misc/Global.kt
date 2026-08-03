@@ -214,7 +214,6 @@ object Global {
             export LD_LIBRARY_PATH=$${appContext.filesDir.absolutePath}/bootstrap/lib:$LD_LIBRARY_PATH
             mkdir -p $CACHE_DIR/tmp
             mkdir -p $CACHE_DIR/run
-            mkdir -p $PROOT_TMP_DIR
             mkdir -p $PUBLIC_DIR
         """.trimIndent())
     }

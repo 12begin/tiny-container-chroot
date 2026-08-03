@@ -441,8 +441,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                         "name" to "XFCE Desktop",
                         "description" to "XFCE Desktop Environment",
                         "preview" to "/usr/share/backgrounds/xfce/xfce-blue.jpg",
-                        "boot_command" to "proot \$EXTRA_ARGS -r \$CONTAINER_DIR -w /home/tiny -b /dev -b /proc -b /sys -b /sdcard:/sdcard /usr/bin/entrypoint.sh",
-                        "export_command" to "cd / && tar --zstd -cpvf \$PUBLIC_DIR/rootfs.tar.zst .tiny.yaml bin boot etc home lib media mnt opt root sbin srv usr var",
+                        "chroot_boot_command" to "env -i DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color su - tiny /bin/bash --login",
                         "feature" to listOf(
                             mapOf("type" to "audio", "enabled" to true),
                             mapOf(
@@ -626,37 +625,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val install = $$"""
                 export CONTAINER_DIR=$${app.dataDir}/$$code
                 mkdir -p $CONTAINER_DIR
-                $BIN_DIR/proot --link2symlink $BIN_DIR/tar -xf $CACHE_DIR/rootfs.tar.zst -C $CONTAINER_DIR --delay-directory-restore --preserve-permissions
-            """.trimIndent()
-            val androidUidGidThings = $$"""
-                $BIN_DIR/sed -i '/^aid_/d' $CONTAINER_DIR/etc/passwd
-                $BIN_DIR/sed -i '/^aid_/d' $CONTAINER_DIR/etc/shadow
-                $BIN_DIR/sed -i '/^aid_/d' $CONTAINER_DIR/etc/group
-                $BIN_DIR/sed -i '/^aid_/d' $CONTAINER_DIR/etc/gshadow
-                # 来自 proot-distro 的神秘代码
-                # https://github.com/termux/proot-distro/blob/eb45040a5c751ca94058bec2f0aef6673707c2cb/proot-distro.sh#L613
-                chmod u+rw "$CONTAINER_DIR/etc/passwd" "$CONTAINER_DIR/etc/shadow" "$CONTAINER_DIR/etc/group" "$CONTAINER_DIR/etc/gshadow"
-                echo "aid_$(id -un):x:$(id -u):$(id -g):Tiny:/:/sbin/nologin" >> "$CONTAINER_DIR/etc/passwd"
-                echo "aid_$(id -un):*:18446:0:99999:7:::" >> "$CONTAINER_DIR/etc/shadow"
-                id -Gn | tr ' ' '\n' > $CACHE_DIR/tmp1
-                id -G | tr ' ' '\n' > $CACHE_DIR/tmp2
-                $BIN_DIR/busybox paste $CACHE_DIR/tmp1 $CACHE_DIR/tmp2 > $CACHE_DIR/tmp3
-                local group_name group_id
-                cat $CACHE_DIR/tmp3 | while read -r group_name group_id; do
-                    echo "aid_${group_name}:x:${group_id}:root,aid_$(id -un)" >> "$CONTAINER_DIR/etc/group"
-                    if [ -f "$CONTAINER_DIR/etc/gshadow" ]; then
-                        echo "aid_${group_name}:*::root,aid_$(id -un)" >> "$CONTAINER_DIR/etc/gshadow"
-                    fi
-                done
+                $BIN_DIR/tar -xf $CACHE_DIR/rootfs.tar.zst -C $CONTAINER_DIR --delay-directory-restore --preserve-permissions
             """.trimIndent()
             val clean = $$"""
-                $BIN_DIR/rm $CACHE_DIR/rootfs.tar.zst $CACHE_DIR/tmp1 $CACHE_DIR/tmp2 $CACHE_DIR/tmp3
+                $BIN_DIR/rm $CACHE_DIR/rootfs.tar.zst
             """.trimIndent()
             Global.setupEnvironment()
-            val chrootMode = Global.rootAvailable
             Global.sendCommand("""
                 $install
-                ${if (chrootMode) "" else "$androidUidGidThings"}
                 $clean
             """.trimIndent())
             Global.sendCommand("exit")

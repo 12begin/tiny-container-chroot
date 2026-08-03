@@ -101,6 +101,11 @@ class RootDetectActivity : AppCompatActivity() {
         binding.detectButton.isEnabled = !isDetecting
         binding.errorText.visibility = View.GONE
         binding.originalLink.visibility = View.GONE
+        binding.detectButton.text = if (isDetecting) {
+            getString(R.string.tc4_root_detect_checking)
+        } else {
+            getString(R.string.tc4_root_detect_btn)
+        }
         binding.statusText.text = if (isDetecting) {
             getString(R.string.tc4_root_detect_checking)
         } else {
@@ -132,5 +137,6 @@ class RootDetectActivity : AppCompatActivity() {
         binding.errorText.visibility = View.VISIBLE
         binding.errorText.text = status.errorMessage ?: getString(R.string.tc4_root_detect_unknown_error)
         binding.originalLink.visibility = View.VISIBLE
+        binding.detectButton.text = getString(R.string.tc4_root_detect_retry_btn)
     }
 }

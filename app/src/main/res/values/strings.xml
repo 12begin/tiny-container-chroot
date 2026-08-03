@@ -306,6 +306,7 @@
     <string name="tc4_root_detect_checking">Checking root permissions…</string>
     <string name="tc4_root_detect_ready">Press the button to check root permissions</string>
     <string name="tc4_root_detect_btn">Detect Root</string>
+    <string name="tc4_root_detect_retry_btn">Retry</string>
     <string name="tc4_root_detect_success">Root permission detected! Starting app…</string>
     <string name="tc4_root_detect_failed">Root permission not detected</string>
     <string name="tc4_root_detect_unknown_error">Unknown error during root detection</string>

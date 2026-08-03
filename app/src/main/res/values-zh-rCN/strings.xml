@@ -300,6 +300,7 @@
     <string name="tc4_root_detect_title">检测 Root 权限</string>
     <string name="tc4_root_detect_desc">此应用使用 chroot 运行 Linux 容器，需要 root 权限才能运行</string>
     <string name="tc4_root_detect_btn">检测 Root 权限</string>
+    <string name="tc4_root_detect_retry_btn">重新检测</string>
     <string name="tc4_root_detect_checking">正在检测…</string>
     <string name="tc4_root_detect_success">Root 权限已获取！正在进入…</string>
     <string name="tc4_root_detect_fail">未检测到 Root 权限</string>
