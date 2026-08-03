@@ -75,8 +75,8 @@ android {
         }
     }
     aaptOptions {
-        // 保留 assets 中以点号开头的隐藏文件（如 .tiny.yaml）
-        ignoreAssetsPattern = "!.tiny.yaml:!.svn:!.git:!.ds_store:!*.scc:!<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"
+        // 不忽略任何 assets 文件（包括以点号开头的 .tiny.yaml）
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"
     }
 }
 
