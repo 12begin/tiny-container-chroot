@@ -622,45 +622,46 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         // EXTRACTING_ROOTFS
         dir.mkdirs()
-        try {
-            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            val cacheDir = app.cacheDir.absolutePath
-            val containerDir = "${app.dataDir.absolutePath}/$code"
+        val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+        val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+        val cacheDir = app.cacheDir.absolutePath
+        val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            val env = mapOf("LD_LIBRARY_PATH" to bootstrapLib)
+        // 方式一：通过 execShell + 绝对路径解压（原版方式）
+        var extracted = false
+        execShell {
+            Global.setupEnvironment()
+            Global.sendCommand("export LD_LIBRARY_PATH=$bootstrapLib")
+            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir")
+            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst")
+            Global.sendCommand("exit")
+        }
+        extracted = File(containerDir, "etc").exists()
 
-            // 1. zstd 解压
-            val zstdPb = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
-            zstdPb.environment().putAll(env)
-            zstdPb.redirectErrorStream(true)
-            val zstdProc = zstdPb.start()
-            val zstdOut = zstdProc.inputStream.bufferedReader().readText()
-            val zstdExit = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-            android.util.Log.i("Install", "zstd exit=$zstdExit out=$zstdOut")
+        // 方式二：如果方式一失败，尝试 ProcessBuilder
+        if (!extracted) {
+            try {
+                val env = mapOf("LD_LIBRARY_PATH" to bootstrapLib)
+                val zstdPb = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
+                zstdPb.environment().putAll(env)
+                zstdPb.redirectErrorStream(true)
+                zstdPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
 
-            // 2. tar 提取
-            val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
-            tarPb.environment().putAll(env)
-            tarPb.redirectErrorStream(true)
-            val tarProc = tarPb.start()
-            val tarOut = tarProc.inputStream.bufferedReader().readText()
-            val tarExit = tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-            android.util.Log.i("Install", "tar exit=$tarExit out=$tarOut")
+                val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
+                tarPb.environment().putAll(env)
+                tarPb.redirectErrorStream(true)
+                tarPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
 
-            // 验证解压结果
-            val etcDir = File(containerDir, "etc")
-            if (etcDir.exists() && etcDir.isDirectory) {
-                android.util.Log.i("Install", "extraction verified: ${etcDir.list()?.size} files in /etc")
-            } else {
-                android.util.Log.w("Install", "extraction may have failed: /etc not found in $containerDir")
+                extracted = File(containerDir, "etc").exists()
+                File("$cacheDir/rootfs.tar.zst").delete()
+                File("$cacheDir/rootfs.tar").delete()
+            } catch (e: Exception) {
+                android.util.Log.e("Install", "method2 failed: ${e.message}")
             }
+        }
 
-            // 清理
-            File("$cacheDir/rootfs.tar.zst").delete()
-            File("$cacheDir/rootfs.tar").delete()
-        } catch (e: Exception) {
-            android.util.Log.e("Install", "extract failed: ${e.message}")
+        if (!extracted) {
+            android.util.Log.e("Install", "All extraction methods failed for $containerDir")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
