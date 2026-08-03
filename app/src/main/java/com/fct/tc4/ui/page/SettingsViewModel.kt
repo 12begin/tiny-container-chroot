@@ -86,14 +86,6 @@ class SettingsViewModel(
                 titleRes = R.string.tc4_settings_shortcut_title,
                 descriptionRes = R.string.tc4_settings_shortcut_desc
             ),
-            ActionSetting(
-                id = "chroot_manage",
-                titleRes = R.string.tc4_settings_chroot_manage_title,
-                descriptionRes = if (Global.rootAvailable)
-                    R.string.tc4_settings_chroot_status_desc
-                else
-                    R.string.tc4_settings_chroot_unavailable_desc
-            ),
             SwitchSetting(
                 id = "auto_launch",
                 titleRes = R.string.tc4_settings_auto_launch_title,

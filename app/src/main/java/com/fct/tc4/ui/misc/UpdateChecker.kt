@@ -33,7 +33,7 @@ sealed class UpdateResult {
 
 object UpdateChecker {
     private const val TAG = "UpdateChecker"
-    private const val API_URL = "https://api.github.com/repos/Cateners/tiny_container/releases/latest"
+    private const val API_URL = "https://api.github.com/repos/12begin/tiny-container-chroot/releases/latest"
 
     suspend fun check(context: Context): UpdateResult = withContext(Dispatchers.IO) {
         try {

@@ -69,10 +69,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".ChrootManageActivity"
-            android:exported="false"
-            android:theme="@style/Theme.TinyContainer" />
 
         <provider
             android:name=".ui.misc.TinyDocumentsProvider"
