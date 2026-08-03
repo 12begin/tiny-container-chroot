@@ -19,12 +19,16 @@ package com.fct.tc4.ui.misc
 
 import android.app.Dialog
 import android.os.Bundle
+import android.view.View
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.fct.tc4.databinding.Tc4DialogFakeProgressBinding
 import com.fct.tc4.ui.page.ContainerManageViewModel
+import com.fct.tc4.ui.page.InstallState
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -75,6 +79,18 @@ class FakeProgressDialogFragment : DialogFragment() {
                 val progress = viewModel.fakeProgress(startTime, arguments?.getLong(ARG_CONTAINER_SIZE) ?: 0L)
                 binding.progressIndicator.setProgressCompat((progress * 100).toInt(), true)
                 delay(200)
+            }
+        }
+
+        // 监听安装日志
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.installState.collect { state ->
+                    if (state is InstallState.Installing && state.log.isNotBlank()) {
+                        binding.logScroll.visibility = View.VISIBLE
+                        binding.logText.text = state.log
+                    }
+                }
             }
         }
 
