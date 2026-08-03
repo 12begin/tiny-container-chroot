@@ -635,10 +635,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 val pb = ProcessBuilder("sh", "-c", cmd)
                 pb.redirectErrorStream(true)
                 val proc = pb.start()
-                val exitCode = proc.waitFor()
-                if (exitCode != 0) {
-                    android.util.Log.w("Install", "tar failed: $output")
-                }
+                proc.waitFor()
             } catch (e: Exception) {
                 android.util.Log.w("Install", "tar exception: ${e.message}")
             }
