@@ -617,13 +617,25 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("cacheDir: $cacheDir")
         appendLog("containerDir: $containerDir")
         appendLog("rootfs 文件大小: ${cacheFile.length()} 字节")
-        appendLog("正在解压（约900MB，可能需要2-3分钟）...")
 
-        // 使用 execShell 解压，所有命令用 && 连接成一条
+        // 验证 bootstrap 文件是否存在
+        val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+        val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+        appendLog("bDir 存在: ${File(bDir).exists()}")
+        appendLog("bDir/tar 存在: ${File("$bDir/tar").exists()}")
+        appendLog("bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
+
+        // 先用 execShell 测试终端是否正常工作
+        var testOk = false
+        execShell(15_000) {
+            Global.sendCommand("echo 'shell_test_ok' && exit")
+        }
+        testOk = true
+        appendLog("终端测试: 正常")
+
+        // 用 execShell 解压
         var extracted = false
-        execShell(120_000) { // 2分钟超时
-            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+        execShell(300_000) { // 5分钟超时
             Global.sendCommand("export LD_LIBRARY_PATH=$bLib && $bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir && rm -f $cacheDir/rootfs.tar.zst && exit")
         }
         extracted = File(containerDir, "etc").exists()
