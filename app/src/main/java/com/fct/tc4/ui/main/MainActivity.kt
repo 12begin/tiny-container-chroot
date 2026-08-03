@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 launch {
                     viewModel.isLogPanelOpen.collect { open ->
-                        binding.logPanel.visibility = if (open) View.VISIBLE else View.GONE
+                        binding.logPanel.root.visibility = if (open) View.VISIBLE else View.GONE
                     }
                 }
                 launch {
