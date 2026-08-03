@@ -353,6 +353,11 @@ class ContainerManageFragment : Fragment() {
                             }
                         }
                         is InstallState.Installing -> {
+                            // 把日志推送到 MainViewModel 日志面板
+                            if (state.log.isNotBlank()) {
+                                mainViewModel.showLogPanel()
+                                mainViewModel.appendLog(state.log)
+                            }
                             if (state.webpage != null) {
                                 // 有网页 → 跳转到 ContainerInstallFragment 展示安装进度
                                 mainViewModel.navigateTo(

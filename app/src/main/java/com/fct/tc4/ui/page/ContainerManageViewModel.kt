@@ -706,6 +706,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    /** 向 MainViewModel 的日志面板追加日志 */
+    private fun mainLog(msg: String) {
+        try {
+            val app = getApplication<Application>()
+            // 通过 activityViewModels 获取 MainViewModel 的方式行不通，
+            // 直接改用 InstallState 的 log 字段，由 MainActivity 统一收集
+            appendLog(msg)
+        } catch (_: Exception) {}
+    }
+
     private fun updateCurrentStep(step: InstallStep) {
         val current = _installState.value
         if (current is InstallState.Installing) {

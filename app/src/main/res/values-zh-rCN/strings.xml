@@ -16,6 +16,8 @@
     <string name="tc4_btn_edit">编辑</string>
     <string name="tc4_btn_share">分享</string>
     <string name="tc4_btn_update">前往更新</string>
+    <string name="tc4_btn_close">关闭</string>
+    <string name="tc4_log_title">安装日志</string>
 
     <!-- ==================== Common Labels ==================== -->
     <string name="tc4_label_enable">启用</string>

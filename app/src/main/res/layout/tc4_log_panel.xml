@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/log_panel"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurfaceContainerHigh"
+    android:elevation="8dp"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:background="?attr/colorSurfaceContainer">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/tc4_log_title"
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+        <ImageButton
+            android:id="@+id/btn_close_log"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/actionModeCloseDrawable"
+            android:contentDescription="@string/tc4_btn_close"
+            android:src="@drawable/close_24dp_eaddff_fill0_wght400_grad0_opsz24" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/log_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/log_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp" />
+    </ScrollView>
+</LinearLayout>

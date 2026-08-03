@@ -94,7 +94,26 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+                launch {
+                    viewModel.isLogPanelOpen.collect { open ->
+                        binding.logPanel.visibility = if (open) View.VISIBLE else View.GONE
+                    }
+                }
+                launch {
+                    viewModel.logContent.collect { content ->
+                        if (content.isNotBlank()) {
+                            binding.logPanel.logText.text = content
+                            binding.logPanel.logScroll.post {
+                                binding.logPanel.logScroll.fullScroll(View.FOCUS_DOWN)
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        binding.logPanel.btnCloseLog.setOnClickListener {
+            viewModel.hideLogPanel()
         }
 
         if (savedInstanceState == null) {

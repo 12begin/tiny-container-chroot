@@ -16,6 +16,8 @@
     <string name="tc4_btn_edit">Edit</string>
     <string name="tc4_btn_share">Share</string>
     <string name="tc4_btn_update">Update</string>
+    <string name="tc4_btn_close">Close</string>
+    <string name="tc4_log_title">Installation Log</string>
 
     <!-- ==================== Common Labels ==================== -->
     <string name="tc4_label_enable">Enable</string>

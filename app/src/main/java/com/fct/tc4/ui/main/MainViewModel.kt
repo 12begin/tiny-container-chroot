@@ -54,6 +54,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _isTerminalOpen.value = false
     }
 
+    // 日志面板
+    private val _isLogPanelOpen = MutableStateFlow(false)
+    val isLogPanelOpen: StateFlow<Boolean> = _isLogPanelOpen.asStateFlow()
+
+    private val _logContent = MutableStateFlow("")
+    val logContent: StateFlow<String> = _logContent.asStateFlow()
+
+    fun appendLog(msg: String) {
+        _logContent.value = _logContent.value + "\n" + msg
+    }
+
+    fun showLogPanel() { _isLogPanelOpen.value = true }
+    fun hideLogPanel() { _isLogPanelOpen.value = false }
+    fun clearLog() { _logContent.value = "" }
+
     // ================ 待执行的捷径命令（内存临时态） ================
 
     companion object {

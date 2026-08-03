@@ -48,4 +48,15 @@
             android:layout_height="match_parent"/>
     </com.fct.tc4.ui.misc.WipeLayout>
 
+    <!-- 日志面板 -->
+    <include
+        android:id="@+id/log_panel"
+        layout="@layout/tc4_log_panel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintWidth_percent="0.25"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
