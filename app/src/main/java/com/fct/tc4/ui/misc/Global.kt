@@ -64,10 +64,6 @@ object Global {
         get() = sharedPrefs.getStringSet("installed_containers", emptySet()) ?: emptySet()
         set(value) = sharedPrefs.edit { putStringSet("installed_containers", value) }
 
-    var useLegacyProot: Boolean
-        get() = sharedPrefs.getBoolean("use_legacy_proot", true)
-        set(value) = sharedPrefs.edit { putBoolean("use_legacy_proot", value) }
-
     var lastVersionCode: Int
         get() = sharedPrefs.getInt("last_version_code", 0)
         set(value) = sharedPrefs.edit { putInt("last_version_code", value) }
@@ -204,7 +200,7 @@ object Global {
     }
 
     fun setupEnvironment(){
-        listOf("tmp", "run", "proot_tmp").forEach { dir ->
+        listOf("tmp", "run").forEach { dir ->
             File(appContext.cacheDir, dir).apply {
                 if (exists()) deleteRecursively()
                 mkdirs()
@@ -216,9 +212,6 @@ object Global {
             export CACHE_DIR=$${appContext.cacheDir.absolutePath}
             export PATH=$BIN_DIR:$PATH
             export LD_LIBRARY_PATH=$${appContext.filesDir.absolutePath}/bootstrap/lib:$LD_LIBRARY_PATH
-            export PROOT_LOADER=$${appContext.filesDir.absolutePath}/applib/libproot-loader-aarch64-5.1.107-68.so
-            export PROOT_LOADER_32=$${appContext.filesDir.absolutePath}/applib/libproot-loader32-aarch64-5.1.107-68.so
-            export PROOT_TMP_DIR=$CACHE_DIR/proot_tmp
             mkdir -p $CACHE_DIR/tmp
             mkdir -p $CACHE_DIR/run
             mkdir -p $PROOT_TMP_DIR
@@ -240,7 +233,7 @@ object Global {
     }
 
     fun cleanTmpFiles() {
-        sendCommand("rm -rf ${appContext.cacheDir.absolutePath}/proot_tmp")
+        sendCommand("rm -rf ${appContext.cacheDir.absolutePath}/tmp")
     }
 
     fun setupBootstrapIfRequired() {
@@ -255,12 +248,6 @@ object Global {
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__busybox__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/sed
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__busybox__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/rm
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__busybox__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/unzip
-                ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__proot-classic__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/proot
-                ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__proot-latest__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/proot-latest
-                ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__proot-classic__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/proot-classic
-                ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__proot-classic-debug__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/proot-classic-debug
-                ln -sf ${appContext.filesDir.absolutePath}/applib/libproot-loader32-aarch64-5.1.107-68.so ${appContext.filesDir.absolutePath}/bootstrap/bin/loader32
-                ln -sf ${appContext.filesDir.absolutePath}/applib/libproot-loader-aarch64-5.1.107-68.so ${appContext.filesDir.absolutePath}/bootstrap/bin/loader
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__tar__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/tar
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__zstd__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/zstd
                 ln -sf ${appContext.filesDir.absolutePath}/applib/lib__bin__virgl_test_server_android__.so ${appContext.filesDir.absolutePath}/bootstrap/bin/virgl_test_server

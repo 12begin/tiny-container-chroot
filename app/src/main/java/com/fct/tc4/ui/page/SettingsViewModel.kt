@@ -74,7 +74,6 @@ class SettingsViewModel(
             "auto_launch" -> Global.autoLaunch = if (newChecked) code else ""
             "auto_launch_gui" -> Global.autoLaunchGui = newChecked
             "reset_bootstrap" -> Global.shouldResetBootstrap = newChecked
-            "use_legacy_proot" -> Global.useLegacyProot = newChecked
             "auto_check_update" -> Global.autoCheckUpdate = newChecked
         }
         refresh()
@@ -106,12 +105,6 @@ class SettingsViewModel(
                 titleRes = R.string.tc4_settings_auto_launch_gui_title,
                 descriptionRes = R.string.tc4_settings_auto_launch_desc,
                 isChecked = Global.autoLaunchGui
-            ),
-            SwitchSetting(
-                id = "use_legacy_proot",
-                titleRes = R.string.tc4_settings_legacy_proot_title,
-                descriptionRes = R.string.tc4_settings_legacy_proot_desc,
-                isChecked = Global.useLegacyProot
             ),
             SwitchSetting(
                 id = "reset_bootstrap",
