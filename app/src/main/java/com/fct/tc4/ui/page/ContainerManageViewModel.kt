@@ -94,7 +94,8 @@ sealed class InstallState {
         val currentStep: InstallStep,
         val startTimeMillis: Long,
         val containerSizeBytes: Long,
-        val webpage: String?
+        val webpage: String?,
+        val log: String = ""
     ) : InstallState()
     data class Completed(
         val launchAfterInstall: Boolean,
@@ -627,8 +628,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         val cacheDir = app.cacheDir.absolutePath
         val containerDir = "${app.dataDir.absolutePath}/$code"
 
+        appendLog("开始解压 rootfs...")
+        appendLog("bootstrapDir: $bootstrapDir")
+        appendLog("cacheDir: $cacheDir")
+        appendLog("containerDir: $containerDir")
+        appendLog("rootfs 文件大小: ${cacheFile.length()} 字节")
+        appendLog("bootstrap/lib 目录: ${File(bootstrapLib).exists()}")
+
         // 方式一：通过 execShell + 绝对路径解压（原版方式）
         var extracted = false
+        appendLog("尝试方式一: execShell + tar -xf")
         execShell {
             Global.setupEnvironment()
             Global.sendCommand("export LD_LIBRARY_PATH=$bootstrapLib")
@@ -637,31 +646,55 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             Global.sendCommand("exit")
         }
         extracted = File(containerDir, "etc").exists()
+        appendLog("方式一结果: extracted=$extracted, /etc 存在=${File(containerDir, "etc").exists()}")
 
         // 方式二：如果方式一失败，尝试 ProcessBuilder
         if (!extracted) {
+            appendLog("方式一失败，尝试方式二: ProcessBuilder + zstd + tar")
             try {
                 val env = mapOf("LD_LIBRARY_PATH" to bootstrapLib)
+
+                // 检查 zstd 和 tar 是否存在
+                appendLog("zstd 存在=${File("$bootstrapDir/zstd").exists()}")
+                appendLog("tar 存在=${File("$bootstrapDir/tar").exists()}")
+
                 val zstdPb = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
                 zstdPb.environment().putAll(env)
                 zstdPb.redirectErrorStream(true)
-                zstdPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                val zstdProc = zstdPb.start()
+                val zstdOut = zstdProc.inputStream.bufferedReader().readText()
+                val zstdExit = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                appendLog("zstd: exit=$zstdExit, out=$zstdOut")
 
-                val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
-                tarPb.environment().putAll(env)
-                tarPb.redirectErrorStream(true)
-                tarPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                if (zstdExit == 0) {
+                    appendLog("zstd 解压成功，rootfs.tar 大小=${File("$cacheDir/rootfs.tar").length()}")
+                    val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
+                    tarPb.environment().putAll(env)
+                    tarPb.redirectErrorStream(true)
+                    val tarProc = tarPb.start()
+                    val tarOut = tarProc.inputStream.bufferedReader().readText()
+                    val tarExit = tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                    appendLog("tar: exit=$tarExit, out=$tarOut")
+                } else {
+                    appendLog("zstd 解压失败，跳过 tar")
+                }
 
                 extracted = File(containerDir, "etc").exists()
+                appendLog("方式二结果: extracted=$extracted")
                 File("$cacheDir/rootfs.tar.zst").delete()
                 File("$cacheDir/rootfs.tar").delete()
             } catch (e: Exception) {
-                android.util.Log.e("Install", "method2 failed: ${e.message}")
+                appendLog("方式二异常: ${e.message}")
             }
         }
 
         if (!extracted) {
-            android.util.Log.e("Install", "All extraction methods failed for $containerDir")
+            appendLog("所有解压方式都失败！")
+            // 列出容器目录内容
+            val dirList = dir.list()?.take(20)?.joinToString(", ") ?: "空"
+            appendLog("容器目录内容: $dirList")
+        } else {
+            appendLog("解压成功！")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
@@ -686,6 +719,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
     fun resetInstallState() {
         _installState.value = InstallState.Idle
+    }
+
+    /** 向安装日志追加一行 */
+    private fun appendLog(msg: String) {
+        val current = _installState.value
+        if (current is InstallState.Installing) {
+            _installState.value = current.copy(log = current.log + "\n" + msg)
+        }
     }
 
     private fun updateCurrentStep(step: InstallStep) {

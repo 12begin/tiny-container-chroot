@@ -26,4 +26,21 @@
         app:trackCornerRadius="4dp"
         app:trackThickness="8dp" />
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_marginTop="16dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/log_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:fontFamily="monospace"
+            android:textSize="11sp"
+            android:lineSpacingExtra="2dp"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </ScrollView>
+
 </LinearLayout>
