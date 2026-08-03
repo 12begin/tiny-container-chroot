@@ -624,15 +624,15 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         dir.mkdirs()
         execShell {
             val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
             val cacheDir = app.cacheDir.absolutePath
             val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            // 先用 setupEnvironment 设置 LD_LIBRARY_PATH
-            Global.setupEnvironment()
-            // 再用绝对路径执行 tar，不依赖 shell 变量
-            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir 2>&1")
+            // 手动设置 LD_LIBRARY_PATH，然后执行 tar
+            Global.sendCommand("export LD_LIBRARY_PATH=$bootstrapLib")
+            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir")
             // 清理缓存
-            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst 2>&1")
+            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst")
             Global.sendCommand("exit")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
