@@ -622,18 +622,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         // EXTRACTING_ROOTFS
         dir.mkdirs()
-        execShell {
+        try {
             val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
             val cacheDir = app.cacheDir.absolutePath
             val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            // 手动设置 LD_LIBRARY_PATH，然后执行 tar
-            Global.sendCommand("export LD_LIBRARY_PATH=$bootstrapLib")
-            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir")
+            // 用 sh -c 直接执行，不依赖 terminal session
+            val cmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
+            val proc = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
+            proc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
             // 清理缓存
-            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst")
-            Global.sendCommand("exit")
+            Runtime.getRuntime().exec(arrayOf("rm", "-f", "$cacheDir/rootfs.tar.zst")).waitFor()
+        } catch (e: Exception) {
+            android.util.Log.e("Install", "extract failed: ${e.message}")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
