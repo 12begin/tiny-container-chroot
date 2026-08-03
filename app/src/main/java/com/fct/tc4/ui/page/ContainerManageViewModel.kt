@@ -621,9 +621,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         // 验证 bootstrap 文件是否存在
         val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
         val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+        val appLibDir = "${app.filesDir.absolutePath}/applib"
         appendLog("bDir 存在: ${File(bDir).exists()}")
+        appendLog("bDir 内容: ${File(bDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
         appendLog("bDir/tar 存在: ${File("$bDir/tar").exists()}")
         appendLog("bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
+        appendLog("bLib 内容: ${File(bLib).list()?.take(30)?.joinToString(", ") ?: "空"}")
+        appendLog("applib 存在: ${File(appLibDir).exists()}")
+        appendLog("applib 内容: ${File(appLibDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
 
         // 先用 execShell 测试终端是否正常工作
         var testOk = false
@@ -634,12 +639,15 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("终端测试: 正常")
 
         // 先用 execShell 创建 bootstrap symlink，再解压
+        appendLog("正在创建 bootstrap symlink...")
         execShell(30_000) {
             Global.setupBootstrapIfRequired()
             Global.sendCommand("exit")
         }
-        appendLog("bDir/tar 存在: ${File("$bDir/tar").exists()}")
-        appendLog("bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
+        appendLog("创建后 bDir 内容: ${File(bDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
+        appendLog("创建后 bDir/tar 存在: ${File("$bDir/tar").exists()}")
+        appendLog("创建后 bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
+        appendLog("创建后 bLib 内容: ${File(bLib).list()?.take(30)?.joinToString(", ") ?: "空"}")
 
         // 用 execShell 解压
         var extracted = false
