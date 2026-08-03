@@ -628,17 +628,23 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val cacheDir = app.cacheDir.absolutePath
             val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            // 先用 zstd 解压，再用 tar 提取，分别设置 LD_LIBRARY_PATH
-            val zstdCmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/zstd -d -f $cacheDir/rootfs.tar.zst -o $cacheDir/rootfs.tar"
-            val zstdProc = Runtime.getRuntime().exec(arrayOf("sh", "-c", zstdCmd))
-            zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            val env = mapOf("LD_LIBRARY_PATH" to bootstrapLib)
 
-            val tarCmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/tar -xf $cacheDir/rootfs.tar -C $containerDir"
-            val tarProc = Runtime.getRuntime().exec(arrayOf("sh", "-c", tarCmd))
-            tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            // 1. zstd 解压
+            val zstdPb = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
+            zstdPb.environment().putAll(env)
+            zstdPb.redirectErrorStream(true)
+            zstdPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
 
-            // 清理缓存
-            Runtime.getRuntime().exec(arrayOf("rm", "-f", "$cacheDir/rootfs.tar.zst", "$cacheDir/rootfs.tar")).waitFor()
+            // 2. tar 提取
+            val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
+            tarPb.environment().putAll(env)
+            tarPb.redirectErrorStream(true)
+            tarPb.start().waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+
+            // 清理
+            File("$cacheDir/rootfs.tar.zst").delete()
+            File("$cacheDir/rootfs.tar").delete()
         } catch (e: Exception) {
             android.util.Log.e("Install", "extract failed: ${e.message}")
         }
