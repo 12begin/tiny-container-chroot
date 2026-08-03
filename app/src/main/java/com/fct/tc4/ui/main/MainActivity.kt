@@ -98,6 +98,7 @@ class MainActivity : AppCompatActivity() {
                 launch {
                     viewModel.isLogPanelOpen.collect { open ->
                         binding.logPanel.root.visibility = if (open) View.VISIBLE else View.GONE
+                        binding.btnShowLog.visibility = if (open) View.GONE else View.VISIBLE
                     }
                 }
                 launch {
@@ -115,6 +116,19 @@ class MainActivity : AppCompatActivity() {
 
         binding.logPanel.btnCloseLog.setOnClickListener {
             viewModel.hideLogPanel()
+        }
+
+        binding.btnShowLog.setOnClickListener {
+            viewModel.showLogPanel()
+        }
+
+        // 点击日志面板标题栏展开/收起
+        binding.logPanel.setOnClickListener {
+            if (viewModel.isLogPanelOpen.value) {
+                viewModel.hideLogPanel()
+            } else {
+                viewModel.showLogPanel()
+            }
         }
 
         if (savedInstanceState == null) {

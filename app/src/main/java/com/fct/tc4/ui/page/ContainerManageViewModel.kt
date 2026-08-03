@@ -457,7 +457,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 Global.isFirstLaunchDone = true
 
                 _installState.value = InstallState.Completed(
-                    launchAfterInstall = true,
+                    launchAfterInstall = false,  // 不自动启动，让用户看到安装结果
                     code = code
                 )
             } catch (e: Exception) {
@@ -618,20 +618,13 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("containerDir: $containerDir")
         appendLog("rootfs 文件大小: ${cacheFile.length()} 字节")
 
-        // 使用 execShell 解压，先确保 bootstrap 设置好
-        // execShell 中通过 sendCommand 执行命令，这些命令在 terminal session 中执行
-        // terminal session 已经由 Global.init() 创建好了
+        // 使用 execShell 解压，所有命令用 && 连接成一条，避免多行命令问题
         var extracted = false
         execShell {
-            // 先设置环境变量和 bootstrap
-            Global.setupEnvironment()
-            Global.setupBootstrapIfRequired()
-            // 用绝对路径执行 tar 解压
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            Global.sendCommand("$bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir")
-            // 清理缓存
-            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst")
-            Global.sendCommand("exit")
+            val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+            // 先设置环境变量，再执行 tar 解压，然后清理，最后 exit
+            Global.sendCommand("export LD_LIBRARY_PATH=$bLib && $bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir && rm -f $cacheDir/rootfs.tar.zst && exit")
         }
         extracted = File(containerDir, "etc").exists()
         appendLog("解压结果: extracted=$extracted")

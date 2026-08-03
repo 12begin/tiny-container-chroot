@@ -353,9 +353,10 @@ class ContainerManageFragment : Fragment() {
                             }
                         }
                         is InstallState.Installing -> {
-                            // 把日志推送到 MainViewModel 日志面板
+                            // 把日志推送到 MainViewModel 日志面板（直接设置完整日志，避免重复）
                             if (state.log.isNotBlank()) {
                                 mainViewModel.showLogPanel()
+                                mainViewModel.clearLog()
                                 mainViewModel.appendLog(state.log)
                             }
                             if (state.webpage != null) {

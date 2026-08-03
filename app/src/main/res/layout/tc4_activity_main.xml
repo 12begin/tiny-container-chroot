@@ -59,4 +59,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
+    <!-- 日志面板展开按钮（面板关闭时显示） -->
+    <ImageButton
+        android:id="@+id/btn_show_log"
+        android:layout_width="32dp"
+        android:layout_height="48dp"
+        android:background="?attr/colorSurfaceContainerHigh"
+        android:elevation="4dp"
+        android:padding="4dp"
+        android:visibility="gone"
+        android:src="@drawable/play_arrow_24dp_1f1f1f_fill0_wght400_grad0_opsz24"
+        android:rotation="180"
+        android:contentDescription="@string/tc4_log_title"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        android:translationY="?attr/actionBarSize" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
