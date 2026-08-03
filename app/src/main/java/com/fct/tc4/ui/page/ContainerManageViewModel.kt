@@ -415,7 +415,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     log = "开始复制 rootfs 到缓存..."
                 )
                 appendLog("assets 中 rootfs.tar.zst 是否存在: ${try { app.assets.open("rootfs.tar.zst").use { true } } catch (_: Exception) { false }}")
-                appendLog("assets 中 .tiny.yaml 是否存在: ${try { app.assets.open(".tiny.yaml").use { true } } catch (_: Exception) { false }}")
+                appendLog("assets 中 tiny.yaml 是否存在: ${try { app.assets.open("tiny.yaml").use { true } } catch (_: Exception) { false }}")
                 app.assets.open("rootfs.tar.zst").use { input ->
                     cacheFile.outputStream().use { output ->
                         input.copyTo(output, bufferSize = 8192)
@@ -423,9 +423,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 }
                 appendLog("复制完成，缓存文件大小: ${cacheFile.length()} 字节")
 
-                // 从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
+                // 从 assets 读取预置的 tiny.yaml
                 val config = try {
-                    app.assets.open(".tiny.yaml").use { input ->
+                    app.assets.open("tiny.yaml").use { input ->
                         val content = input.bufferedReader().readText()
                         @Suppress("UNCHECKED_CAST")
                         Yaml().load<Map<String, Any>>(content)
