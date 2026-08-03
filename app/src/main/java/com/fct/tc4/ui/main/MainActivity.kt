@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 点击日志面板标题栏展开/收起
-        binding.logPanel.setOnClickListener {
+        binding.logPanel.root.setOnClickListener {
             if (viewModel.isLogPanelOpen.value) {
                 viewModel.hideLogPanel()
             } else {
