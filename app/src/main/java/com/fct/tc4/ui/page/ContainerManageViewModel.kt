@@ -622,19 +622,13 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         // EXTRACTING_ROOTFS
         dir.mkdirs()
         execShell {
-            val install = $$"""
-                export CONTAINER_DIR=$${app.dataDir}/$$code
-                mkdir -p $CONTAINER_DIR
-                $BIN_DIR/tar -xf $CACHE_DIR/rootfs.tar.zst -C $CONTAINER_DIR --delay-directory-restore --preserve-permissions
-            """.trimIndent()
-            val clean = $$"""
-                $BIN_DIR/rm $CACHE_DIR/rootfs.tar.zst
-            """.trimIndent()
-            Global.setupEnvironment()
-            Global.sendCommand("""
-                $install
-                $clean
-            """.trimIndent())
+            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val cacheDir = app.cacheDir.absolutePath
+            val containerDir = "${app.dataDir.absolutePath}/$code"
+
+            // 直接用绝对路径，不依赖 $$ 模板
+            Global.sendCommand("$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir 2>/dev/null")
+            Global.sendCommand("$bootstrapDir/rm $cacheDir/rootfs.tar.zst 2>/dev/null")
             Global.sendCommand("exit")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
