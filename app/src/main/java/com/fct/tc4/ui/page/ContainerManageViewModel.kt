@@ -708,7 +708,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 block()
                 // 如果设置了超时，在超时后取消
                 if (timeoutMs > 0) {
-                    kotlinx.coroutines.launch {
+                    withContext(Dispatchers.Main) {
                         kotlinx.coroutines.delay(timeoutMs)
                         if (cont.isActive) {
                             appendLog("execShell 超时（${timeoutMs}ms）")
