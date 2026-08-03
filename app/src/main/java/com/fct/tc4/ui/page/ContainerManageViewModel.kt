@@ -663,18 +663,18 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 zstdPb.redirectErrorStream(true)
                 val zstdProc = zstdPb.start()
                 val zstdOut = zstdProc.inputStream.bufferedReader().readText()
-                val zstdExit = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-                appendLog("zstd: exit=$zstdExit, out=$zstdOut")
+                val zstdFinished = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                appendLog("zstd: finished=$zstdFinished, out=$zstdOut")
 
-                if (zstdExit == 0) {
+                if (zstdFinished) {
                     appendLog("zstd 解压成功，rootfs.tar 大小=${File("$cacheDir/rootfs.tar").length()}")
                     val tarPb = ProcessBuilder("$bootstrapDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
                     tarPb.environment().putAll(env)
                     tarPb.redirectErrorStream(true)
                     val tarProc = tarPb.start()
                     val tarOut = tarProc.inputStream.bufferedReader().readText()
-                    val tarExit = tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-                    appendLog("tar: exit=$tarExit, out=$tarOut")
+                    val tarFinished = tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+                    appendLog("tar: finished=$tarFinished, out=$tarOut")
                 } else {
                     appendLog("zstd 解压失败，跳过 tar")
                 }
