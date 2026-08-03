@@ -625,12 +625,17 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
             val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
             val cacheDir = app.cacheDir.absolutePath
-            val containerDir = "$dir" // 复用已有变量
+            val containerDir = "$dir"
 
-            // 通过 su -c 直接执行 tar 命令，不依赖 terminal session
-            RootUtils.executeWithSu(suPath, "$bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir 2>&1")
-            RootUtils.executeWithSu(suPath, "rm -f $cacheDir/rootfs.tar.zst 2>&1")
+            // 通过 su -c 执行 tar 命令，设置 LD_LIBRARY_PATH 让 tar 能找到 zstd 库
+            val tarCmd = "env LD_LIBRARY_PATH=$bootstrapLib $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
+            val result = RootUtils.executeWithSu(suPath, tarCmd)
+            if (result == null) {
+                android.util.Log.w("Install", "tar extraction may have failed")
+            }
+            RootUtils.executeWithSu(suPath, "rm -f $cacheDir/rootfs.tar.zst")
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
