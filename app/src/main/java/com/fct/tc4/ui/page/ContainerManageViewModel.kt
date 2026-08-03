@@ -628,12 +628,17 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val cacheDir = app.cacheDir.absolutePath
             val containerDir = "${app.dataDir.absolutePath}/$code"
 
-            // 用 sh -c 直接执行，不依赖 terminal session
-            val cmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
-            val proc = Runtime.getRuntime().exec(arrayOf("sh", "-c", cmd))
-            proc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+            // 先用 zstd 解压，再用 tar 提取，分别设置 LD_LIBRARY_PATH
+            val zstdCmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/zstd -d -f $cacheDir/rootfs.tar.zst -o $cacheDir/rootfs.tar"
+            val zstdProc = Runtime.getRuntime().exec(arrayOf("sh", "-c", zstdCmd))
+            zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+
+            val tarCmd = "export LD_LIBRARY_PATH=$bootstrapLib && $bootstrapDir/tar -xf $cacheDir/rootfs.tar -C $containerDir"
+            val tarProc = Runtime.getRuntime().exec(arrayOf("sh", "-c", tarCmd))
+            tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
+
             // 清理缓存
-            Runtime.getRuntime().exec(arrayOf("rm", "-f", "$cacheDir/rootfs.tar.zst")).waitFor()
+            Runtime.getRuntime().exec(arrayOf("rm", "-f", "$cacheDir/rootfs.tar.zst", "$cacheDir/rootfs.tar")).waitFor()
         } catch (e: Exception) {
             android.util.Log.e("Install", "extract failed: ${e.message}")
         }
