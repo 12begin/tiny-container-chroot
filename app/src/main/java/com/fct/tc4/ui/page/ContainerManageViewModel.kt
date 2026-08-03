@@ -633,6 +633,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         testOk = true
         appendLog("终端测试: 正常")
 
+        // 先用 execShell 创建 bootstrap symlink，再解压
+        execShell(30_000) {
+            Global.setupBootstrapIfRequired()
+            Global.sendCommand("exit")
+        }
+        appendLog("bDir/tar 存在: ${File("$bDir/tar").exists()}")
+        appendLog("bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
+
         // 用 execShell 解压
         var extracted = false
         execShell(300_000) { // 5分钟超时
