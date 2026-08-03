@@ -610,61 +610,31 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         // EXTRACTING_ROOTFS
         dir.mkdirs()
-        val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-        val bootstrapLib = "${app.filesDir.absolutePath}/bootstrap/lib"
         val cacheDir = app.cacheDir.absolutePath
         val containerDir = "${app.dataDir.absolutePath}/$code"
 
         appendLog("开始解压 rootfs...")
-        appendLog("bootstrapDir: $bootstrapDir")
         appendLog("cacheDir: $cacheDir")
         appendLog("containerDir: $containerDir")
         appendLog("rootfs 文件大小: ${cacheFile.length()} 字节")
 
-        // 使用 ProcessBuilder 直接解压，不依赖 execShell 和 terminal session
-        // 先 zstd 解压，再 tar 提取，设置 LD_LIBRARY_PATH
+        // 使用 execShell 解压，先确保 bootstrap 设置好
+        // execShell 中通过 sendCommand 执行命令，这些命令在 terminal session 中执行
+        // terminal session 已经由 Global.init() 创建好了
         var extracted = false
-        try {
-            val env = mapOf("LD_LIBRARY_PATH" to bootstrapLib)
-
-            appendLog("步骤1: zstd 解压...")
-            appendLog("zstd 路径: $bootstrapDir/zstd")
-            appendLog("zstd 存在: ${File("$bootstrapDir/zstd").exists()}")
-            appendLog("libzstd 存在: ${File("$bootstrapLib/libzstd.so.1").exists()}")
-
-            val zstdCmd = arrayOf("$bootstrapDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
-            val zstdPb = ProcessBuilder(*zstdCmd)
-            zstdPb.environment().putAll(env)
-            zstdPb.redirectErrorStream(true)
-            val zstdProc = zstdPb.start()
-            val zstdOut = zstdProc.inputStream.bufferedReader().readText()
-            zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-            appendLog("zstd 输出: $zstdOut")
-
-            val tarFile = "$cacheDir/rootfs.tar"
-            appendLog("步骤2: tar 提取...")
-            appendLog("tar 路径: $bootstrapDir/tar")
-            appendLog("tar 存在: ${File("$bootstrapDir/tar").exists()}")
-            appendLog("rootfs.tar 大小: ${File(tarFile).length()} 字节")
-
-            val tarCmd = arrayOf("$bootstrapDir/tar", "-xf", tarFile, "-C", containerDir)
-            val tarPb = ProcessBuilder(*tarCmd)
-            tarPb.environment().putAll(env)
-            tarPb.redirectErrorStream(true)
-            val tarProc = tarPb.start()
-            val tarOut = tarProc.inputStream.bufferedReader().readText()
-            tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
-            appendLog("tar 输出: $tarOut")
-
-            extracted = File(containerDir, "etc").exists()
-            appendLog("解压结果: extracted=$extracted")
-
-            // 清理临时文件
-            File("$cacheDir/rootfs.tar.zst").delete()
-            File("$cacheDir/rootfs.tar").delete()
-        } catch (e: Exception) {
-            appendLog("解压异常: ${e.message}")
+        execShell {
+            // 先设置环境变量和 bootstrap
+            Global.setupEnvironment()
+            Global.setupBootstrapIfRequired()
+            // 用绝对路径执行 tar 解压
+            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            Global.sendCommand("$bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir")
+            // 清理缓存
+            Global.sendCommand("rm -f $cacheDir/rootfs.tar.zst")
+            Global.sendCommand("exit")
         }
+        extracted = File(containerDir, "etc").exists()
+        appendLog("解压结果: extracted=$extracted")
 
         if (!extracted) {
             appendLog("解压失败！容器目录内容:")
