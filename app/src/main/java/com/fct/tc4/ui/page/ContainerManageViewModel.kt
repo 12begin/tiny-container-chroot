@@ -405,13 +405,23 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             try {
                 val cacheFile = File(app.cacheDir, "rootfs.tar.zst")
 
-                // 从 assets 复制到缓存
-                _installState.value = InstallState.CopyingToCache
+                // 从 assets 复制到缓存，先进入 Installing 状态以便显示日志
+                _installState.value = InstallState.Installing(
+                    code = "xfce",
+                    currentStep = InstallStep.DELETING_OLD,
+                    startTimeMillis = System.currentTimeMillis(),
+                    containerSizeBytes = 0L,
+                    webpage = null,
+                    log = "开始复制 rootfs 到缓存..."
+                )
+                appendLog("assets 中 rootfs.tar.zst 是否存在: ${try { app.assets.open("rootfs.tar.zst").use { true } } catch (_: Exception) { false }}")
+                appendLog("assets 中 .tiny.yaml 是否存在: ${try { app.assets.open(".tiny.yaml").use { true } } catch (_: Exception) { false }}")
                 app.assets.open("rootfs.tar.zst").use { input ->
                     cacheFile.outputStream().use { output ->
                         input.copyTo(output, bufferSize = 8192)
                     }
                 }
+                appendLog("复制完成，缓存文件大小: ${cacheFile.length()} 字节")
 
                 // 从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
                 val config = try {
@@ -736,10 +746,15 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
     /** 在 terminal session 中执行命令，等待 session 结束后返回 exitCode */
     private suspend fun execShell(block: () -> Unit): Int = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { cont ->
-            Global.newSession(onFinished = { exitCode ->
-                cont.resume(exitCode)
-            })
-            block()
+            try {
+                Global.newSession(onFinished = { exitCode ->
+                    if (cont.isActive) cont.resume(exitCode)
+                })
+                block()
+            } catch (e: Exception) {
+                appendLog("execShell 异常: ${e.message}")
+                if (cont.isActive) cont.resume(-1)
+            }
         }
     }
 }
