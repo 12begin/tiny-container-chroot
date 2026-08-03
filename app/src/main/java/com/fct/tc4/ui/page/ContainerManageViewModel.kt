@@ -629,13 +629,24 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val cacheDir = app.cacheDir.absolutePath
             val containerDir = "$dir"
 
-            // 通过 su -c 执行 tar 命令，设置 LD_LIBRARY_PATH 让 tar 能找到 zstd 库
-            val tarCmd = "env LD_LIBRARY_PATH=$bootstrapLib $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
-            val result = RootUtils.executeWithSu(suPath, tarCmd)
-            if (result == null) {
-                android.util.Log.w("Install", "tar extraction may have failed")
+            // 通过 sh -c 执行 tar，设置 LD_LIBRARY_PATH
+            try {
+                val cmd = "LD_LIBRARY_PATH=$bootstrapLib $bootstrapDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir"
+                val pb = ProcessBuilder("sh", "-c", cmd)
+                pb.redirectErrorStream(true)
+                val proc = pb.start()
+                val output = proc.inputStream.reader().readText()
+                val exitCode = proc.waitFor(120, java.util.concurrent.TimeUnit.SECONDS)
+                if (exitCode != 0) {
+                    android.util.Log.w("Install", "tar failed: $output")
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("Install", "tar exception: ${e.message}")
             }
-            RootUtils.executeWithSu(suPath, "rm -f $cacheDir/rootfs.tar.zst")
+            // 清理缓存
+            try {
+                ProcessBuilder("rm", "-f", "$cacheDir/rootfs.tar.zst").start().waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
+            } catch (_: Exception) {}
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
