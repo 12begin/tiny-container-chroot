@@ -415,7 +415,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
                 // 从 assets 读取预置的 .tiny.yaml（跳过解包提取，避免 tar/zstd 环境问题）
                 val config = try {
-                    app.assets.open("tiny.yaml").use { input ->
+                    app.assets.open(".tiny.yaml").use { input ->
                         val content = input.bufferedReader().readText()
                         @Suppress("UNCHECKED_CAST")
                         Yaml().load<Map<String, Any>>(content)

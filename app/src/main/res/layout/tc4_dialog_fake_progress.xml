@@ -27,6 +27,7 @@
         app:trackThickness="8dp" />
 
     <ScrollView
+        android:id="@+id/log_scroll"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         android:layout_marginTop="16dp"
