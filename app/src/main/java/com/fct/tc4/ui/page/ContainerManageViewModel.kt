@@ -697,6 +697,23 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             appendLog("$dirList")
         } else {
             appendLog("解压成功！")
+            // 修复容器 rootfs 关键文件的所有者
+            // 原项目的 rootfs 是在 proot 的 uid 映射下打包的，
+            // 文件所有者可能是宿主机的 uid（如 10337），chroot 下 uid 不映射，
+            // 导致 sudo 等需要 root 所有权的文件报错
+            try {
+                appendLog("修复文件所有者...")
+                val suPath = Global.suPath
+                if (suPath.isNotEmpty()) {
+                    RootUtils.executeWithSu(suPath,
+                        "chown -R 0:0 \"$containerDir/etc/sudo.conf\" \"$containerDir/etc/sudoers\" \"$containerDir/etc/sudoers.d\" 2>/dev/null")
+                    RootUtils.executeWithSu(suPath,
+                        "chmod 440 \"$containerDir/etc/sudoers\" 2>/dev/null")
+                    appendLog("文件所有者修复完成")
+                }
+            } catch (e: Exception) {
+                appendLog("修复文件所有者失败: ${e.message}")
+            }
             // 复制 bootstrap busybox 到容器内，作为 chroot 的静态入口
             try {
                 val srcBusybox = File("$bDir/busybox")
