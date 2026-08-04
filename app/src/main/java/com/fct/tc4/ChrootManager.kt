@@ -50,9 +50,20 @@ object ChrootManager {
         containerDir: String,
         extraBindMounts: List<String> = emptyList()
     ): Boolean {
-        val entries = buildMountEntries(containerDir, extraBindMounts)
         var allSuccess = true
 
+        // 关键步骤：重新挂载 /data 分区为 dev,suid
+        // Android 的 /data 分区默认以 nosuid,noexec 挂载，
+        // 导致 chroot 后的二进制文件无法执行（表现为 "No such file or directory"）
+        try {
+            RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid /data 2>/dev/null")
+            Log.d(TAG, "/data 已重新挂载为 dev,suid")
+        } catch (e: Exception) {
+            Log.w(TAG, "重新挂载 /data 失败: ${e.message}")
+            allSuccess = false
+        }
+
+        val entries = buildMountEntries(containerDir, extraBindMounts)
         // 获取当前已挂载列表，跳过已挂载的点
         val mountedList = getMountedList(suPath, containerDir)
 
@@ -143,7 +154,9 @@ object ChrootManager {
             MountEntry("proc", "proc", "$containerDir/proc", "proc"),
             MountEntry("sysfs", "sysfs", "$containerDir/sys", "sysfs"),
             MountEntry("bind", "/dev", "$containerDir/dev", "", "bind"),
-            MountEntry("bind", "/dev/pts", "$containerDir/dev/pts", "", "bind")
+            MountEntry("bind", "/dev/pts", "$containerDir/dev/pts", "", "bind"),
+            // dev/shm 是很多应用（如 Python、Chrome）需要的共享内存
+            MountEntry("tmpfs", "tmpfs", "$containerDir/dev/shm", "tmpfs", "mode=1777")
         )
 
         // 如果 /sdcard 存在，添加绑定挂载
@@ -171,6 +184,12 @@ object ChrootManager {
             val cmd = when (entry.type) {
                 "proc" -> "mount -t proc proc \"${entry.target}\" 2>/dev/null"
                 "sysfs" -> "mount -t sysfs sysfs \"${entry.target}\" 2>/dev/null"
+                "tmpfs" -> {
+                    // 确保目标目录存在
+                    RootUtils.executeWithSu(suPath, "mkdir -p \"${entry.target}\"")
+                    val opts = if (entry.options.isNotBlank()) "-o ${entry.options}" else ""
+                    "mount -t tmpfs $opts tmpfs \"${entry.target}\" 2>/dev/null"
+                }
                 "bind" -> {
                     // 确保目标目录存在
                     RootUtils.executeWithSu(suPath, "mkdir -p \"${entry.target}\"")

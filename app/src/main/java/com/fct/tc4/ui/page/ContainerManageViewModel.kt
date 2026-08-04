@@ -697,6 +697,21 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             appendLog("$dirList")
         } else {
             appendLog("解压成功！")
+            // 复制 bootstrap busybox 到容器内，作为 chroot 的静态入口
+            try {
+                val srcBusybox = File("$bDir/busybox")
+                val dstBusybox = File(containerDir, "bin/busybox")
+                if (srcBusybox.exists() && !dstBusybox.exists()) {
+                    srcBusybox.copyTo(dstBusybox, overwrite = false)
+                    // 设置可执行权限
+                    Runtime.getRuntime().exec(arrayOf("chmod", "755", dstBusybox.absolutePath)).waitFor()
+                    appendLog("已复制 busybox 到容器内: ${dstBusybox.absolutePath}")
+                } else {
+                    appendLog("busybox 已存在或源文件不存在: srcExists=${srcBusybox.exists()}, dstExists=${dstBusybox.exists()}")
+                }
+            } catch (e: Exception) {
+                appendLog("复制 busybox 失败: ${e.message}")
+            }
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
         cleanCacheFiles()
