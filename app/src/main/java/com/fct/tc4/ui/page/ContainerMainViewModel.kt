@@ -145,7 +145,7 @@ class ContainerMainViewModel(
             if (suPath.isNotEmpty()) {
                 // 在终端输出卸载进度
                 Global.sendCommand("echo \"正在停止容器进程...\"")
-                Global.sendCommand("$suPath -c \"fuser -km $containerDir 2>/dev/null; pkill -9 -f 'Xtigervnc|startxfce4|xfce4-session|xfwm4|xfdesktop|xfce4-panel' 2>/dev/null; sleep 1\"")
+                Global.sendCommand("$suPath -c \"pkill -9 -x Xtigervnc 2>/dev/null; sleep 1\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
                 viewModelScope.launch(Dispatchers.IO) {
                     ChrootManager.umountAll(suPath, containerDir)

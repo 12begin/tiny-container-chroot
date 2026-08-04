@@ -98,13 +98,12 @@ object ChrootManager {
      */
     fun umountAll(suPath: String, containerDir: String) {
         // 先 kill 容器内的进程，释放文件系统占用
+        // 注意：只 kill 明确属于容器内的进程，不能用 fuser 无差别杀
         try {
-            // 找出所有在容器目录下打开文件的进程并 kill
             RootUtils.executeWithSu(suPath,
-                "fuser -km \"$containerDir\" 2>/dev/null")
-            // 也 kill Xtigervnc 和 xfce4 进程
+                "pkill -9 -f \"^${containerDir}/\" 2>/dev/null")
             RootUtils.executeWithSu(suPath,
-                "pkill -9 -f \"Xtigervnc\\|startxfce4\\|xfce4-session\\|xfwm4\\|xfdesktop\\|xfce4-panel\" 2>/dev/null")
+                "pkill -9 -x \"Xtigervnc\" 2>/dev/null")
             Thread.sleep(500) // 等待进程退出
         } catch (_: Exception) {}
 
