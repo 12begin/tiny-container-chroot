@@ -67,7 +67,10 @@ jobs:
           mkdir -p app/src/main/jniLibs/arm64-v8a
           curl -sL -o jniLibs.zip \
             "https://github.com/Cateners/tiny_container/releases/download/v4.0.0/jniLibs.zip"
-          unzip -q jniLibs.zip -d app/src/main/jniLibs/arm64-v8a/
+          unzip -q -o jniLibs.zip -d app/src/main/
+          # 同时复制到 assets/jni 目录，确保所有文件被打包
+          mkdir -p app/src/main/assets/jni
+          cp -r app/src/main/jniLibs/arm64-v8a/* app/src/main/assets/jni/
           rm jniLibs.zip
 
       - name: 下载 rootfs

@@ -166,6 +166,8 @@ object Global {
 
         newSession()
         setNativeLibraryPath()
+        // 从 assets/jni 复制 .so 文件到 applib 目录（确保 bootstrap 需要的文件存在）
+        copyAssetsJniToAppLib()
         cleanTmpFiles()
         setupBootstrapIfRequired()
 
@@ -233,6 +235,27 @@ object Global {
 
     fun cleanTmpFiles() {
         sendCommand("rm -rf ${appContext.cacheDir.absolutePath}/tmp")
+    }
+
+    /** 从 assets/jni 复制 .so 文件到 applib 目录 */
+    private fun copyAssetsJniToAppLib() {
+        try {
+            val files = appContext.assets.list("jni") ?: return
+            val appLibDir = File(appContext.filesDir, "applib")
+            appLibDir.mkdirs()
+            for (fileName in files) {
+                try {
+                    val target = File(appLibDir, fileName)
+                    if (!target.exists()) {
+                        appContext.assets.open("jni/$fileName").use { input ->
+                            target.outputStream().use { output ->
+                                input.copyTo(output, bufferSize = 8192)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
     }
 
     fun setupBootstrapIfRequired() {
