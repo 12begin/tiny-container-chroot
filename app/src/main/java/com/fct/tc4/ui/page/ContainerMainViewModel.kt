@@ -233,26 +233,16 @@ class ContainerMainViewModel(
             if (hasBusybox) {
                 // busybox 是静态编译的，绝对不会有动态链接问题
                 // 用 busybox sh 作为入口，再 exec bash
-                shellEntry = "/bin/busybox sh -c 'exec /bin/bash --noprofile --norc --login 2>/dev/null || exec /bin/busybox sh'"
+                shellEntry = "/bin/busybox sh -c 'exec /bin/bash --login 2>/dev/null || exec /bin/busybox sh'"
             } else {
                 // fallback: 直接尝试 bash
-                shellEntry = "/bin/bash --noprofile --norc --login"
+                shellEntry = "/bin/bash --login"
             }
 
-            // 构建最终的 chroot 命令，通过 su -c 以 root 执行
-            // 使用 busybox chroot（更可靠，Android 系统 chroot 可能不存在）
-            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            // 注意：shellEntry 中可能包含单引号，所以 su 的命令字符串需要用双引号包裹
-            // su -c 接受一个字符串参数，所以我们需要确保引号正确嵌套
-            // 使用 printf 或直接写入脚本文件来避免引号问题
-            val chrootScript = buildString {
-                appendLine("#!/system/bin/sh")
-                appendLine("exec $bDir/busybox chroot \"$containerDir\" $shellEntry")
-            }
-            val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}_chroot.sh")
-            bootScript.writeText(chrootScript)
-            // 设置可执行权限，然后用 su 直接执行脚本文件
-            val chrootCmd = "$suPath -c 'sh ${bootScript.absolutePath} && rm ${bootScript.absolutePath}'"
+            // 直接通过 su 执行 chroot，用 exec 替换当前 shell 进程
+            // 不写脚本文件，避免引号嵌套问题
+            // 使用 su 的 -c 选项，整个命令用双引号包裹
+            val chrootCmd = "$suPath -c \"exec chroot $containerDir $shellEntry\""
             Global.sendCommand(chrootCmd)
         }
 
