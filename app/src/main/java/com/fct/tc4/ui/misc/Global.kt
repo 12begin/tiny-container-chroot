@@ -240,10 +240,46 @@ object Global {
     /** 从 assets/jni 复制 .so 文件到 applib 目录 */
     private fun copyAssetsJniToAppLib() {
         try {
-            val files = appContext.assets.list("jni") ?: return
             val appLibDir = File(appContext.filesDir, "applib")
             appLibDir.mkdirs()
-            for (fileName in files) {
+
+            // 需要复制的关键文件列表（硬编码，避免 assets.list() 不可靠）
+            val requiredFiles = listOf(
+                "lib__bin__busybox__.so",
+                "lib__bin__tar__.so",
+                "lib__bin__zstd__.so",
+                "lib__bin__virgl_test_server_android__.so",
+                "lib__lib__libacl.so__.so",
+                "lib__lib__libandroid-selinux.so__.so",
+                "lib__lib__libattr.so__.so",
+                "lib__lib__libbusybox.so.1.37.0__.so",
+                "lib__lib__libiconv.so__.so",
+                "lib__lib__libpcre2-8.so__.so",
+                "lib__lib__libtalloc.so.2.4.4__.so",
+                "lib__lib__libzstd.so.1.5.7__.so",
+                "lib__lib__libz.so.1.3.2__.so",
+                "lib__lib__liblzma.so.5.8.3__.so",
+                "lib__opt__virglrenderer-android__lib__libvirglrenderer.so__.so",
+                "lib__opt__virglrenderer-android__lib__libepoxy.so__.so"
+            )
+
+            for (fileName in requiredFiles) {
+                try {
+                    val target = File(appLibDir, fileName)
+                    if (!target.exists()) {
+                        appContext.assets.open("jni/$fileName").use { input ->
+                            target.outputStream().use { output ->
+                                input.copyTo(output, bufferSize = 8192)
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 也复制 list() 返回的其他文件（如果有）
+            val extraFiles = appContext.assets.list("jni") ?: return
+            for (fileName in extraFiles) {
+                if (fileName in requiredFiles) continue
                 try {
                     val target = File(appLibDir, fileName)
                     if (!target.exists()) {
