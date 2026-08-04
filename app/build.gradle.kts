@@ -25,6 +25,12 @@ android {
         version = release(37)
     }
 
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
+        }
+    }
+
     signingConfigs {
         create("release") {
             storeFile = System.getenv("STORE_FILE")?.let { file(it) }
