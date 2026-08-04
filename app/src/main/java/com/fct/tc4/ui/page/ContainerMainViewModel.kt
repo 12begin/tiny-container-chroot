@@ -218,7 +218,8 @@ class ContainerMainViewModel(
             // 检查是否有 chroot 专用启动命令，否则用默认 shell
             val chrootBootCmd = config["chroot_boot_command"] as? String
                 ?: "/bin/bash --login"
-            val chrootCmd = "$suPath -c \"chroot $containerDir $chrootBootCmd\""
+            // 在宿主机设置环境变量，然后 chroot 进入容器，切换到 tiny 用户
+            val chrootCmd = "$suPath -c \"export DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 ELECTRON_DISABLE_SANDBOX=1 && chroot $containerDir su - tiny $chrootBootCmd\""
             // 写入临时脚本文件，避免 PTY 行长度限制
             val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}_chroot.sh")
             bootScript.writeText(chrootCmd)
