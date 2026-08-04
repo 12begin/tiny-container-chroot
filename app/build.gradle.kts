@@ -72,6 +72,8 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // 强制打包所有 .so 文件，包括不被 Java 代码直接引用的
+            pickFirsts.add("lib/arm64-v8a/*.so")
         }
     }
     aaptOptions {
