@@ -61,21 +61,14 @@ object ChrootManager {
         try {
             val dataMountOpts = RootUtils.executeWithSu(suPath,
                 "grep ' /data ' /proc/mounts | head -1 | sed 's/.* -o //;s/ .*//'")
-            Log.d(TAG, "/data 当前挂载选项: $dataMountOpts")
             if (dataMountOpts != null) {
                 val newOpts = dataMountOpts
                     .replace("nosuid", "suid")
                     .replace("noexec", "exec")
                     .replace("nodev", "dev")
-                val remountResult = RootUtils.executeWithSu(suPath, "mount -o remount,$newOpts /data 2>&1")
-                Log.d(TAG, "/data remount 结果: $remountResult")
-                // 验证
-                val verifyOpts = RootUtils.executeWithSu(suPath,
-                    "grep ' /data ' /proc/mounts | head -1 | sed 's/.* -o //;s/ .*//'")
-                Log.d(TAG, "/data 验证: $verifyOpts")
+                RootUtils.executeWithSu(suPath, "mount -o remount,$newOpts /data 2>/dev/null")
             } else {
-                Log.w(TAG, "无法读取 /data 挂载选项，尝试直接 remount")
-                RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid,exec /data 2>&1")
+                RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid,exec /data 2>/dev/null")
             }
         } catch (e: Exception) {
             Log.w(TAG, "重新挂载 /data 失败: ${e.message}")
