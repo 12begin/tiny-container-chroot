@@ -97,15 +97,9 @@ object ChrootManager {
      * @param containerDir 容器的根文件系统目录
      */
     fun umountAll(suPath: String, containerDir: String) {
-        // 先 kill 容器内的进程，释放文件系统占用
-        // 注意：只 kill 明确属于容器内的进程，不能用 fuser 无差别杀
-        try {
-            RootUtils.executeWithSu(suPath,
-                "pkill -9 -f \"^${containerDir}/\" 2>/dev/null")
-            RootUtils.executeWithSu(suPath,
-                "pkill -9 -x \"Xtigervnc\" 2>/dev/null")
-            Thread.sleep(500) // 等待进程退出
-        } catch (_: Exception) {}
+        // 不 kill 任何进程，直接用 lazy umount 断开挂载点
+        // 注意：不能用 pkill Xtigervnc，会误杀原项目的 VNC
+        // umount -l 会立即断开，进程退出后自动清理
 
         // 从 /proc/mounts 获取所有容器相关的挂载点
         val mountList = getMountedList(suPath, containerDir)

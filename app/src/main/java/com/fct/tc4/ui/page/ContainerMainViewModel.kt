@@ -144,8 +144,6 @@ class ContainerMainViewModel(
             val containerDir = "${getApplication<Application>().dataDir.absolutePath}/$code"
             if (suPath.isNotEmpty()) {
                 // 在终端输出卸载进度
-                Global.sendCommand("echo \"正在停止容器进程...\"")
-                Global.sendCommand("$suPath -c \"pkill -9 -x Xtigervnc 2>/dev/null; sleep 1\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
                 viewModelScope.launch(Dispatchers.IO) {
                     ChrootManager.umountAll(suPath, containerDir)
