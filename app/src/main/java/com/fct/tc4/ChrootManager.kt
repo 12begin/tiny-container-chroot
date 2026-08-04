@@ -97,7 +97,18 @@ object ChrootManager {
      * @param containerDir 容器的根文件系统目录
      */
     fun umountAll(suPath: String, containerDir: String) {
-        // 从 /proc/mounts 获取所有容器相关的挂载点，按挂载顺序排列
+        // 先 kill 容器内的进程，释放文件系统占用
+        try {
+            // 找出所有在容器目录下打开文件的进程并 kill
+            RootUtils.executeWithSu(suPath,
+                "fuser -km \"$containerDir\" 2>/dev/null")
+            // 也 kill Xtigervnc 和 xfce4 进程
+            RootUtils.executeWithSu(suPath,
+                "pkill -9 -f \"Xtigervnc\\|startxfce4\\|xfce4-session\\|xfwm4\\|xfdesktop\\|xfce4-panel\" 2>/dev/null")
+            Thread.sleep(500) // 等待进程退出
+        } catch (_: Exception) {}
+
+        // 从 /proc/mounts 获取所有容器相关的挂载点
         val mountList = getMountedList(suPath, containerDir)
         if (mountList.isEmpty()) {
             Log.d(TAG, "没有已挂载的文件系统，跳过卸载")
@@ -105,7 +116,6 @@ object ChrootManager {
         }
 
         // 从挂载行中提取目标路径（第二个字段）
-        // 格式: "device on /path type opts"
         val targets = mountList.mapNotNull { line ->
             val parts = line.split(" ")
             if (parts.size >= 2) parts[1] else null
