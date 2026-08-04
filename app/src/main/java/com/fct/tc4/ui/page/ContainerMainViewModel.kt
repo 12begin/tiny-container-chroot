@@ -211,18 +211,11 @@ class ContainerMainViewModel(
             Global.sendCommand(cmd)
         }
 
-        // chroot 模式：通过 su -c 执行 chroot 进入容器
+        // chroot 模式：通过 su 进入 root shell 再执行 chroot
         val app = getApplication<Application>()
         val containerDir = "${app.dataDir.absolutePath}/$code"
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
-            // 策略：
-            // 1. 优先使用容器内的 /bin/busybox sh 作为入口（静态编译，无依赖）
-            // 2. 如果 busybox 不存在，尝试直接用 /bin/bash
-            // 3. bash 使用 --noprofile --norc 跳过初始化脚本中的潜在问题
-            //
-            // busybox 在安装时由 performInstall() 复制到容器内
-
             // 验证容器内 busybox 是否存在
             val hasBusybox = withContext(Dispatchers.IO) {
                 val check = RootUtils.executeWithSu(suPath, "test -x \"$containerDir/bin/busybox\" && echo yes")
@@ -231,19 +224,14 @@ class ContainerMainViewModel(
 
             val shellEntry: String
             if (hasBusybox) {
-                // busybox 是静态编译的，绝对不会有动态链接问题
-                // 用 busybox sh 作为入口，再 exec bash
                 shellEntry = "/bin/busybox sh -c 'exec /bin/bash --login 2>/dev/null || exec /bin/busybox sh'"
             } else {
-                // fallback: 直接尝试 bash
                 shellEntry = "/bin/bash --login"
             }
 
-            // 直接通过 su 执行 chroot，用 exec 替换当前 shell 进程
-            // 不写脚本文件，避免引号嵌套问题
-            // 使用 su 的 -c 选项，整个命令用双引号包裹
-            val chrootCmd = "$suPath -c \"exec chroot $containerDir $shellEntry\""
-            Global.sendCommand(chrootCmd)
+            // 用 su 进入交互式 root shell 后立即执行 chroot
+            // 两步合为一条命令，用分号分隔，确保在同一个 PTY 上下文中执行
+            Global.sendCommand("$suPath -c 'exec chroot \"$containerDir\" $shellEntry'")
         }
 
         for (cmd in merged.postStartContainerCommands) {
