@@ -196,7 +196,11 @@ class ContainerMainViewModel(
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
             withContext(Dispatchers.IO) {
-                ChrootManager.mountAll(suPath, containerDir)
+                // 绑定宿主机的 cache/tmp → 容器内 /tmp，cache/run → 容器内 /run
+                // 与原项目 proot 的 --bind=$CACHE_DIR/tmp:/tmp --bind=$CACHE_DIR/run:/run 对应
+                val cacheDir = app.cacheDir.absolutePath
+                val extraMounts = listOf("$cacheDir/tmp:$containerDir/tmp", "$cacheDir/run:$containerDir/run")
+                ChrootManager.mountAll(suPath, containerDir, extraMounts)
             }
         }
     }
@@ -216,8 +220,9 @@ class ContainerMainViewModel(
         val containerDir = "${app.dataDir.absolutePath}/$code"
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
-            // 通过 su -c 以 root 执行 chroot，进入容器内的 bash
-            // chroot 后的 bash 继承 terminal session 的 PTY，可交互操作
+            // 通过 su -c 以 root 执行 chroot，进入容器
+            // 先以 root 进入，再通过 su - tiny 切换到普通用户
+            // 这样 /etc/sudoers 等文件的权限问题由 root 修复
             Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/bash --login\"")
         }
 
