@@ -656,10 +656,12 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("创建后 bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
         appendLog("创建后 bLib 内容: ${File(bLib).list()?.take(30)?.joinToString(", ") ?: "空"}")
 
-        // 用 execShell 解压
+        // 用 execShell 解压（busybox 内置 zstd 支持，不需要额外库）
         var extracted = false
         execShell(300_000) { // 5分钟超时
-            Global.sendCommand("export LD_LIBRARY_PATH=$bLib && $bDir/tar -xf $cacheDir/rootfs.tar.zst -C $containerDir && rm -f $cacheDir/rootfs.tar.zst && exit")
+            val fDir = app.filesDir.absolutePath
+            // 用 busybox 的 zstd 解压成 tar，再用 busybox 的 tar 提取
+            Global.sendCommand("$fDir/bootstrap/bin/busybox zstd -d -f $cacheDir/rootfs.tar.zst -o $cacheDir/rootfs.tar && $fDir/bootstrap/bin/busybox tar -xf $cacheDir/rootfs.tar -C $containerDir && rm -f $cacheDir/rootfs.tar.zst $cacheDir/rootfs.tar && exit")
         }
         extracted = File(containerDir, "etc").exists()
         appendLog("解压结果: extracted=$extracted")

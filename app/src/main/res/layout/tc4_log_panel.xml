@@ -27,7 +27,7 @@
             android:id="@+id/btn_copy_log"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="?attr/actionModeCloseDrawable"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="复制日志"
             android:src="@drawable/content_copy_24dp_eaddff_fill0_wght400_grad0_opsz24" />
 
@@ -35,7 +35,7 @@
             android:id="@+id/btn_close_log"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="?attr/actionModeCloseDrawable"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/tc4_btn_close"
             android:src="@drawable/close_24dp_eaddff_fill0_wght400_grad0_opsz24" />
     </LinearLayout>
