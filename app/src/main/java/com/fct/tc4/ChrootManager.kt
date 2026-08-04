@@ -88,42 +88,58 @@ object ChrootManager {
 
     /**
      * 卸载所有已挂载的文件系统（逆序卸载）。
-     * 先检查是否已挂载，只卸载确实挂载了的点，避免对系统造成影响。
+     * 和 linuxdeploy 的 container_umount 逻辑一致：
+     * 1. 从 /proc/mounts 获取所有挂载点
+     * 2. 逆序卸载（先卸载最内层的挂载）
+     * 3. 对每个挂载点尝试 3 次
+     * 4. 最后卸载容器目录自身的 bind mount
      * @param suPath su 二进制路径
      * @param containerDir 容器的根文件系统目录
      */
     fun umountAll(suPath: String, containerDir: String) {
-        // 逆序卸载：先卸载最内层的挂载
-        val mountPoints = listOf(
-            "$containerDir/sdcard",
-            "$containerDir/dev/pts",
-            "$containerDir/dev",
-            "$containerDir/sys",
-            "$containerDir/proc"
-        )
-
-        // 先获取当前已挂载的列表，只处理确实挂载了的点
-        val mountedList = getMountedList(suPath, containerDir)
-        if (mountedList.isEmpty()) {
+        // 从 /proc/mounts 获取所有容器相关的挂载点，按挂载顺序排列
+        val mountList = getMountedList(suPath, containerDir)
+        if (mountList.isEmpty()) {
             Log.d(TAG, "没有已挂载的文件系统，跳过卸载")
             return
         }
 
-        for (mp in mountPoints) {
-            // 检查这个挂载点是否在已挂载列表中
-            val isActuallyMounted = mountedList.any { it.contains(mp) }
-            if (!isActuallyMounted) {
-                Log.d(TAG, "跳过卸载（未挂载）: $mp")
-                continue
+        // 从挂载行中提取目标路径（第二个字段）
+        // 格式: "device on /path type opts"
+        val targets = mountList.mapNotNull { line ->
+            val parts = line.split(" ")
+            if (parts.size >= 2) parts[1] else null
+        }.filter { it.startsWith(containerDir) }
+
+        // 逆序卸载（先卸载最内层的挂载）
+        for (target in targets.reversed()) {
+            var success = false
+            for (attempt in 1..3) {
+                try {
+                    val result = RootUtils.executeWithSu(suPath, "umount -l \"$target\" 2>/dev/null")
+                    if (result == null) {
+                        success = true
+                        break
+                    }
+                } catch (_: Exception) {}
+                Thread.sleep(200)
             }
-            try {
-                // 使用 lazy umount，立即断开挂载，后台清理
-                RootUtils.executeWithSu(suPath, "umount -l \"$mp\" 2>/dev/null")
-                Log.d(TAG, "已卸载: $mp")
-            } catch (e: Exception) {
-                Log.w(TAG, "卸载 $mp 失败: ${e.message}，跳过继续")
+            if (success) {
+                Log.d(TAG, "已卸载: $target")
+            } else {
+                Log.w(TAG, "卸载失败（3次尝试）: $target")
             }
         }
+
+        // 最后检查容器目录自身的 bind mount 是否还在
+        try {
+            val stillMounted = RootUtils.executeWithSu(suPath,
+                "mount | grep \" on $containerDir \"")
+            if (stillMounted != null) {
+                RootUtils.executeWithSu(suPath, "umount -l \"$containerDir\" 2>/dev/null")
+                Log.d(TAG, "已卸载容器目录 bind mount: $containerDir")
+            }
+        } catch (_: Exception) {}
     }
 
     /**
