@@ -448,7 +448,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     "code" to code,
                     "name" to "XFCE Desktop",
                     "description" to "XFCE Desktop Environment",
-                    "chroot_boot_command" to "env -i DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color su - tiny /bin/bash --login",
+                    "chroot_boot_command" to "/bin/bash --login",
                     "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
                 ))
 
