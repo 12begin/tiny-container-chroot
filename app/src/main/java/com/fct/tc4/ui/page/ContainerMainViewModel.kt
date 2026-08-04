@@ -191,18 +191,6 @@ class ContainerMainViewModel(
         Global.setupEnvironment()
         val containerDir = "${app.dataDir.absolutePath}/$code"
         Global.sendCommand("export CONTAINER_DIR=$containerDir")
-
-        // chroot 模式：挂载文件系统
-        val suPath = Global.suPath
-        if (suPath.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
-                // 绑定宿主机的 cache/tmp → 容器内 /tmp，cache/run → 容器内 /run
-                // 与原项目 proot 的 --bind=$CACHE_DIR/tmp:/tmp --bind=$CACHE_DIR/run:/run 对应
-                val cacheDir = app.cacheDir.absolutePath
-                val extraMounts = listOf("$cacheDir/tmp:$containerDir/tmp", "$cacheDir/run:$containerDir/run")
-                ChrootManager.mountAll(suPath, containerDir, extraMounts)
-            }
-        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -215,17 +203,45 @@ class ContainerMainViewModel(
             Global.sendCommand(cmd)
         }
 
-        // chroot 模式：通过 su -c 执行 chroot 进入容器
+        // chroot 模式：mount + chroot 在同一个 su -c 中执行
+        // KernelSU 的 su 会创建独立的挂载命名空间，分开执行 mount 会失效
+        // 所以必须把所有操作放在一个 su -c 里
         val app = getApplication<Application>()
         val containerDir = "${app.dataDir.absolutePath}/$code"
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
-            // 通过 su -c 以 root 执行 chroot，进入容器
-            // 容器目录已通过 ChrootManager.mountAll 挂载为 exec,suid,dev
-            // 所以容器内的二进制文件可以正常执行
-            // 以 tiny 用户身份进入，和原项目 proot 模式保持一致
-            // tiny 密码已在安装时置空，su - 不需要密码
-            Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/su - tiny\"")
+            val cacheDir = app.cacheDir.absolutePath
+            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+
+            // 构建一个完整的脚本：mount → chroot
+            // 模仿 linuxdeploy 的 mount_part root 方式
+            val bootScript = """
+# 1. remount 容器目录为 exec,suid,dev
+mount -o bind "$containerDir" "$containerDir" 2>/dev/null
+mount -o remount,exec,suid,dev "$containerDir" 2>/dev/null
+
+# 2. 挂载 proc/sys/dev/dev/pts/dev/shm/system/vendor
+mkdir -p "$containerDir/proc" "$containerDir/sys" "$containerDir/dev" "$containerDir/dev/pts" "$containerDir/dev/shm" "$containerDir/system" "$containerDir/vendor" 2>/dev/null
+mount -t proc proc "$containerDir/proc" 2>/dev/null
+mount -t sysfs sysfs "$containerDir/sys" 2>/dev/null
+mount -o bind /dev "$containerDir/dev" 2>/dev/null
+mount -o bind /dev/pts "$containerDir/dev/pts" 2>/dev/null
+mount -t tmpfs -o mode=1777 tmpfs "$containerDir/dev/shm" 2>/dev/null
+mount -o bind /system "$containerDir/system" 2>/dev/null
+mount -o bind /vendor "$containerDir/vendor" 2>/dev/null
+
+# 3. 绑定 cache/tmp → /tmp, cache/run → /run
+mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
+mount -o bind "$cacheDir/tmp" "$containerDir/tmp" 2>/dev/null
+mount -o bind "$cacheDir/run" "$containerDir/run" 2>/dev/null
+
+# 4. chroot 进入容器，以 tiny 用户身份
+exec $bDir/busybox chroot --userspec=10337:10337 "$containerDir" /bin/bash --login
+""".trimIndent()
+
+            val scriptFile = File("${app.cacheDir}/boot_${code}_chroot.sh")
+            scriptFile.writeText(bootScript)
+            Global.sendCommand("$suPath -c 'sh ${scriptFile.absolutePath}'")
         }
 
         for (cmd in merged.postStartContainerCommands) {
