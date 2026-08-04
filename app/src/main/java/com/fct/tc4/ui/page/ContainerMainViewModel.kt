@@ -217,26 +217,33 @@ class ContainerMainViewModel(
             // 模仿 linuxdeploy 的 mount_part root 方式
             val bootScript = """
 # 1. remount 容器目录为 exec,suid,dev
-mount -o bind "$containerDir" "$containerDir" 2>/dev/null
-mount -o remount,exec,suid,dev "$containerDir" 2>/dev/null
+mount -o bind "$containerDir" "$containerDir"
+mount -o remount,exec,suid,dev "$containerDir"
 
 # 2. 挂载 proc/sys/dev/dev/pts/dev/shm/system/vendor
-mkdir -p "$containerDir/proc" "$containerDir/sys" "$containerDir/dev" "$containerDir/dev/pts" "$containerDir/dev/shm" "$containerDir/system" "$containerDir/vendor" 2>/dev/null
-mount -t proc proc "$containerDir/proc" 2>/dev/null
-mount -t sysfs sysfs "$containerDir/sys" 2>/dev/null
-mount -o bind /dev "$containerDir/dev" 2>/dev/null
-mount -o bind /dev/pts "$containerDir/dev/pts" 2>/dev/null
-mount -t tmpfs -o mode=1777 tmpfs "$containerDir/dev/shm" 2>/dev/null
-mount -o bind /system "$containerDir/system" 2>/dev/null
-mount -o bind /vendor "$containerDir/vendor" 2>/dev/null
+mkdir -p "$containerDir/proc" "$containerDir/sys" "$containerDir/dev" "$containerDir/dev/pts" "$containerDir/dev/shm" "$containerDir/system" "$containerDir/vendor"
+mount -t proc proc "$containerDir/proc"
+mount -t sysfs sysfs "$containerDir/sys"
+mount -o bind /dev "$containerDir/dev"
+mount -o bind /dev/pts "$containerDir/dev/pts"
+mount -t tmpfs -o mode=1777 tmpfs "$containerDir/dev/shm"
+mount -o bind /system "$containerDir/system"
+mount -o bind /vendor "$containerDir/vendor"
 
 # 3. 绑定 cache/tmp → /tmp, cache/run → /run
-mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
-mount -o bind "$cacheDir/tmp" "$containerDir/tmp" 2>/dev/null
-mount -o bind "$cacheDir/run" "$containerDir/run" 2>/dev/null
+mkdir -p "$containerDir/tmp" "$containerDir/run"
+mount -o bind "$cacheDir/tmp" "$containerDir/tmp"
+mount -o bind "$cacheDir/run" "$containerDir/run"
 
-# 4. chroot 进入容器（以 root 身份，--userspec busybox 不支持）
-exec $bDir/busybox chroot "$containerDir" /bin/bash --login
+# 4. chroot 进入容器
+# 先检查 mount 是否生效
+echo "=== mount check ==="
+mount | grep "$containerDir" | head -20
+echo "=== exec test ==="
+touch "$containerDir/test_exec" 2>/dev/null && echo "touch OK"
+chroot "$containerDir" /bin/bash --login 2>&1
+echo "=== chroot failed ==="
+""".trimIndent()
 """.trimIndent()
 
             val scriptFile = File("${app.cacheDir}/boot_${code}_chroot.sh")
