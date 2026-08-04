@@ -656,17 +656,15 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("创建后 bLib/libzstd.so.1 存在: ${File("$bLib/libzstd.so.1").exists()}")
         appendLog("创建后 bLib 内容: ${File(bLib).list()?.take(30)?.joinToString(", ") ?: "空"}")
 
-        // 用 ProcessBuilder 解压，不依赖 execShell（避免卡住）
+        // 用 ProcessBuilder 解压（使用 busybox tar，不需要 LD_LIBRARY_PATH）
         var extracted = false
         try {
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            val env = mapOf("LD_LIBRARY_PATH" to bLib)
 
             appendLog("步骤1: zstd 解压...")
             val zstdCmd = arrayOf("$bDir/zstd", "-d", "-f", "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
             val zstdPb = ProcessBuilder(*zstdCmd)
-            zstdPb.environment().putAll(env)
+            zstdPb.environment().putAll(mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"))
             zstdPb.redirectErrorStream(true)
             val zstdProc = zstdPb.start()
             val zstdOut = zstdProc.inputStream.bufferedReader().readText()
@@ -676,7 +674,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             appendLog("步骤2: tar 提取...")
             val tarCmd = arrayOf("$bDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
             val tarPb = ProcessBuilder(*tarCmd)
-            tarPb.environment().putAll(env)
+            tarPb.environment().putAll(mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"))
             tarPb.redirectErrorStream(true)
             val tarProc = tarPb.start()
             val tarOut = tarProc.inputStream.bufferedReader().readText()
