@@ -221,10 +221,10 @@ class ContainerMainViewModel(
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
             // 通过 su -c 以 root 执行 chroot，进入容器
-            // 用 --userspec 指定容器内 uid 为 10337（tiny 用户），
-            // 这样容器内以 tiny 用户身份运行，桌面环境可以正常启动
-            // 原项目 proot 模式也是以 tiny 用户身份运行的
-            Global.sendCommand("$suPath -c \"exec chroot --userspec=10337:10337 $containerDir /bin/bash --login\"")
+            // 容器内以 root 身份启动，然后通过 su - tiny 切换到普通用户
+            // （tiny 密码已在安装时置空，su - 不需要密码）
+            // 桌面环境（dbus、VNC、XFCE）需要在普通用户下运行
+            Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/su - tiny\"")
         }
 
         for (cmd in merged.postStartContainerCommands) {

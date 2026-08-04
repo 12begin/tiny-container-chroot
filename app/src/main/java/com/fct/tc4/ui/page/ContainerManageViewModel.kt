@@ -714,6 +714,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             } catch (e: Exception) {
                 appendLog("修复文件所有者失败: ${e.message}")
             }
+            // 设置 tiny 用户密码为空（chroot 下 --userspec 不可用，
+            // 需要以 root 进入后 su - tiny，但 su 需要密码，设为空密码）
+            try {
+                appendLog("设置 tiny 用户空密码...")
+                val suPath = Global.suPath
+                if (suPath.isNotEmpty()) {
+                    // 直接修改 shadow 文件，把 tiny 的密码字段置空
+                    RootUtils.executeWithSu(suPath,
+                        "sed -i 's/^tiny:[^:]*/tiny::/' \"$containerDir/etc/shadow\" 2>/dev/null")
+                    appendLog("密码设置完成")
+                }
+            } catch (e: Exception) {
+                appendLog("设置密码失败: ${e.message}")
+            }
             // 复制 bootstrap busybox 到容器内，作为 chroot 的静态入口
             try {
                 val srcBusybox = File("$bDir/busybox")
