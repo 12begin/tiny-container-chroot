@@ -216,11 +216,11 @@ class ContainerMainViewModel(
         val containerDir = "${app.dataDir.absolutePath}/$code"
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
-            // 最简单的命令：su -c "exec chroot /dir /bin/bash --login"
-            // 不使用 busybox sh -c，避免引号嵌套问题
-            // 让 bash 直接作为 chroot 的入口，由 bash 自己处理动态链接
-            // 如果 /bin/bash 不可用，用户会看到错误信息，方便排查
-            Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/bash --login\"")
+            // 先用 su -c 执行一个简单的测试命令，确认 su 能正常工作
+            Global.sendCommand("$suPath -c \"echo 'SU_OK' && id\"")
+            // 然后执行 chroot，把 stderr 重定向到 stdout 以便看到错误信息
+            // 不加 exec，这样如果 chroot 失败，能继续执行后续命令
+            Global.sendCommand("$suPath -c \"chroot $containerDir /bin/bash --login 2>&1\"")
         }
 
         for (cmd in merged.postStartContainerCommands) {
