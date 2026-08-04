@@ -52,12 +52,26 @@ object ChrootManager {
     ): Boolean {
         var allSuccess = true
 
-        // 关键步骤：重新挂载 /data 分区为 dev,suid
+        // 关键步骤：重新挂载 /data 分区为 dev,suid,exec
         // Android 的 /data 分区默认以 nosuid,noexec 挂载，
         // 导致 chroot 后的二进制文件无法执行（表现为 "No such file or directory"）
+        //
+        // 注意：必须保留原有的挂载选项（如 lazytime, seclabel 等），
+        // 只替换 nosuid→suid, noexec→exec, nodev→dev，否则会 EINVAL 失败
         try {
-            RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid /data 2>/dev/null")
-            Log.d(TAG, "/data 已重新挂载为 dev,suid")
+            val dataMountOpts = RootUtils.executeWithSu(suPath,
+                "grep ' /data ' /proc/mounts | head -1 | sed 's/.* -o //;s/ .*//'")
+            if (dataMountOpts != null) {
+                val newOpts = dataMountOpts
+                    .replace("nosuid", "suid")
+                    .replace("noexec", "exec")
+                    .replace("nodev", "dev")
+                RootUtils.executeWithSu(suPath, "mount -o remount,$newOpts /data 2>/dev/null")
+                Log.d(TAG, "/data 已重新挂载: $newOpts")
+            } else {
+                // fallback: 直接尝试
+                RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid,exec /data 2>/dev/null")
+            }
         } catch (e: Exception) {
             Log.w(TAG, "重新挂载 /data 失败: ${e.message}")
             allSuccess = false
