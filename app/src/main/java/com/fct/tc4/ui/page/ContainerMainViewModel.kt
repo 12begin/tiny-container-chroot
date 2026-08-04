@@ -244,7 +244,6 @@ touch "$containerDir/test_exec" 2>/dev/null && echo "touch OK"
 chroot "$containerDir" /bin/bash --login 2>&1
 echo "=== chroot failed ==="
 """.trimIndent()
-""".trimIndent()
 
             val scriptFile = File("${app.cacheDir}/boot_${code}_chroot.sh")
             scriptFile.writeText(bootScript)
