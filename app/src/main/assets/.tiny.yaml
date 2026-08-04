@@ -74,7 +74,7 @@ feature:
     eval `dbus-launch --sh-syntax`; \
     export XDG_RUNTIME_DIR="/tmp/runtime-tiny"; \
     mkdir -p $XDG_RUNTIME_DIR; \
-    Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport -1 \
+    Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport 5900 \
     -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -a 5 -once -depth 24 \
     -SecurityTypes=None -nopw -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :0 -extension MIT-SHM > /dev/null 2>&1 & \
     while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
