@@ -215,12 +215,8 @@ class ContainerMainViewModel(
         val containerDir = "${app.dataDir.absolutePath}/$code"
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
-            // 检查是否有 chroot 专用启动命令，否则用默认 shell
-            val chrootBootCmd = config["chroot_boot_command"] as? String
-                ?: "/bin/bash --login"
-            // 在宿主机设置环境变量，然后 chroot 进入容器
-            // 直接进入 bash，不通过 su（容器内可能没有 su）
-            val chrootCmd = "$suPath -c \"export DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 ELECTRON_DISABLE_SANDBOX=1 && chroot $containerDir $chrootBootCmd\""
+            // 直接 chroot 进入 bash，不依赖配置中的 chroot_boot_command
+            val chrootCmd = "$suPath -c \"export DISPLAY=:6 LANG=zh_CN.UTF-8 HOME=/home/tiny USER=tiny TERM=xterm-256color MOZ_FAKE_NO_SANDBOX=1 QTWEBENGINE_DISABLE_SANDBOX=1 ELECTRON_DISABLE_SANDBOX=1 && chroot $containerDir /bin/bash --login\""
             // 写入临时脚本文件，避免 PTY 行长度限制
             val bootScript = File("${getApplication<Application>().cacheDir}/boot_${code}_chroot.sh")
             bootScript.writeText(chrootCmd)
