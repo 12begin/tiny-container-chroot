@@ -72,12 +72,12 @@ feature:
   command: |
     sudo service dbus start; \
     eval `dbus-launch --sh-syntax`; \
-    export XDG_RUNTIME_DIR=”/tmp/runtime-tiny”; \
+    export XDG_RUNTIME_DIR="/tmp/runtime-tiny"; \
     mkdir -p $XDG_RUNTIME_DIR; \
     Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport -1 \
     -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -a 5 -once -depth 24 \
-    -SecurityTypes=None -desktop “Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc” :0 -extension MIT-SHM > /dev/null 2>&1 & \
-    while [ ! -S “/tmp/.tiny.vnc” ]; do sleep 0.1; done && \
+    -SecurityTypes=None -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :0 -extension MIT-SHM > /dev/null 2>&1 & \
+    while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
     startxfce4 > /dev/null 2>&1 &
   link: vnc://127.0.0.1:5900
   enabled: true
@@ -88,12 +88,12 @@ feature:
   name: Termux:X11显示图形界面
   description: |-
     支持手写笔。目前上限最高的图形界面显示方式，但也较吃性能。
-    需要”通知”权限。如果没有，可能在进入界面时卡住。
+    需要"通知"权限。如果没有，可能在进入界面时卡住。
     默认情况下以触摸板方式操控，双指单击是鼠标右键，返回弹出小键盘。
   command: |
     sudo service dbus start; \
     eval `dbus-launch --sh-syntax`; \
-    export XDG_RUNTIME_DIR=”/tmp/runtime-tiny”; \
+    export XDG_RUNTIME_DIR="/tmp/runtime-tiny"; \
     mkdir -p $XDG_RUNTIME_DIR; \
     startxfce4 > /dev/null 2>&1 &
   enabled: false
@@ -423,7 +423,7 @@ options:
     enabled: false
   - type: options
     name: Adreno GPU 加速
-    description: 只有部分 Adreno GPU 可使用的加速选项。 以下选项最多选一个，其中“启用DRI3”只有在使用 Termux:X11 显示图形界面时才可用。
+    description: 只有部分 Adreno GPU 可使用的加速选项。 以下选项最多选一个，其中"启用DRI3"只有在使用 Termux:X11 显示图形界面时才可用。
     options:
     - type: option
       name: Turnip + Zink 加速
