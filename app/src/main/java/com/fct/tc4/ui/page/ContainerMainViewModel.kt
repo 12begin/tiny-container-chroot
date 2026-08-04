@@ -235,8 +235,8 @@ mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
 mount -o bind "$cacheDir/tmp" "$containerDir/tmp" 2>/dev/null
 mount -o bind "$cacheDir/run" "$containerDir/run" 2>/dev/null
 
-# 4. chroot 进入容器，以 tiny 用户身份
-exec $bDir/busybox chroot --userspec=10337:10337 "$containerDir" /bin/bash --login
+# 4. chroot 进入容器（以 root 身份，--userspec busybox 不支持）
+exec $bDir/busybox chroot "$containerDir" /bin/bash --login
 """.trimIndent()
 
             val scriptFile = File("${app.cacheDir}/boot_${code}_chroot.sh")
