@@ -221,9 +221,11 @@ class ContainerMainViewModel(
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
             // 通过 su -c 以 root 执行 chroot，进入容器
-            // 以 root 身份进入，不切换用户（su - tiny 在 noexec 下会失败）
-            // 桌面环境在 root 下也能运行，只是需要确保环境变量正确
-            Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/bash --login\"")
+            // 容器目录已通过 ChrootManager.mountAll 挂载为 exec,suid,dev
+            // 所以容器内的二进制文件可以正常执行
+            // 以 tiny 用户身份进入，和原项目 proot 模式保持一致
+            // tiny 密码已在安装时置空，su - 不需要密码
+            Global.sendCommand("$suPath -c \"exec chroot $containerDir /bin/su - tiny\"")
         }
 
         for (cmd in merged.postStartContainerCommands) {

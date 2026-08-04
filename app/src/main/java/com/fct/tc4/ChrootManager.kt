@@ -52,26 +52,17 @@ object ChrootManager {
     ): Boolean {
         var allSuccess = true
 
-        // 关键步骤：重新挂载 /data 分区为 dev,suid,exec
-        // Android 的 /data 分区默认以 nosuid,noexec 挂载，
-        // 导致 chroot 后的二进制文件无法执行（表现为 "No such file or directory"）
-        //
-        // 注意：必须保留原有的挂载选项（如 lazytime, seclabel 等），
-        // 只替换 nosuid→suid, noexec→exec, nodev→dev，否则会 EINVAL 失败
+        // 关键步骤：先 bind mount 容器目录自身，再 remount 为 exec,suid,dev
+        // 和 linuxdeploy 的 mount_part root 逻辑一致：
+        //   mount -o bind "${TARGET_PATH}" "${CHROOT_DIR}" &&
+        //   mount -o remount,exec,suid,dev "${CHROOT_DIR}"
+        // 只 remount 容器目录本身，不修改整个 /data 分区，避免 KernelSU 阻止
         try {
-            val dataMountOpts = RootUtils.executeWithSu(suPath,
-                "grep ' /data ' /proc/mounts | head -1 | sed 's/.* -o //;s/ .*//'")
-            if (dataMountOpts != null) {
-                val newOpts = dataMountOpts
-                    .replace("nosuid", "suid")
-                    .replace("noexec", "exec")
-                    .replace("nodev", "dev")
-                RootUtils.executeWithSu(suPath, "mount -o remount,$newOpts /data 2>/dev/null")
-            } else {
-                RootUtils.executeWithSu(suPath, "mount -o remount,dev,suid,exec /data 2>/dev/null")
-            }
+            RootUtils.executeWithSu(suPath, "mount -o bind \"$containerDir\" \"$containerDir\" 2>/dev/null")
+            RootUtils.executeWithSu(suPath, "mount -o remount,exec,suid,dev \"$containerDir\" 2>/dev/null")
+            Log.d(TAG, "容器目录已 remount 为 exec,suid,dev: $containerDir")
         } catch (e: Exception) {
-            Log.w(TAG, "重新挂载 /data 失败: ${e.message}")
+            Log.w(TAG, "remount 容器目录失败: ${e.message}")
             allSuccess = false
         }
 
@@ -168,7 +159,10 @@ object ChrootManager {
             MountEntry("bind", "/dev", "$containerDir/dev", "", "bind"),
             MountEntry("bind", "/dev/pts", "$containerDir/dev/pts", "", "bind"),
             // dev/shm 是很多应用（如 Python、Chrome）需要的共享内存
-            MountEntry("tmpfs", "tmpfs", "$containerDir/dev/shm", "tmpfs", "mode=1777")
+            MountEntry("tmpfs", "tmpfs", "$containerDir/dev/shm", "tmpfs", "mode=1777"),
+            // 绑定 Android 系统分区，供容器内访问
+            MountEntry("bind", "/system", "$containerDir/system", "", "bind"),
+            MountEntry("bind", "/vendor", "$containerDir/vendor", "", "bind")
         )
 
         // 如果 /sdcard 存在，添加绑定挂载
