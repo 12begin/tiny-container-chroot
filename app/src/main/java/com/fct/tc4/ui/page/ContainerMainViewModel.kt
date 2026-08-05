@@ -248,8 +248,14 @@ mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
 mount -o bind "$cacheDir/tmp" "$containerDir/tmp" 2>/dev/null
 mount -o bind "$cacheDir/run" "$containerDir/run" 2>/dev/null
 
-# 4. chroot 进入容器
-exec chroot "$containerDir" /bin/bash --login
+# 4. chroot 进入容器（Debian 上 bash 在 /usr/bin/bash，/bin 是 symlink）
+if [ -x "$containerDir/bin/bash" ]; then
+    exec chroot "$containerDir" /bin/bash --login
+elif [ -x "$containerDir/usr/bin/bash" ]; then
+    exec chroot "$containerDir" /usr/bin/bash --login
+else
+    exec chroot "$containerDir" /bin/sh --login
+fi
 """.trimIndent()
 
             val scriptFile = File("${app.cacheDir}/boot_${code}_chroot.sh")
