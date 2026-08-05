@@ -54,47 +54,7 @@
             android:linksClickable="true"
             android:text="@string/tc4_container_empty_with_link" />
 
-        <TextView
-            android:id="@+id/builtin_list_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/tc4_container_builtin_list_title"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:gravity="center"
-            android:visibility="gone" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_install_xfce"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginTop="12dp"
-            android:minWidth="200dp"
-            android:text="@string/tc4_container_builtin_xfce"
-            android:visibility="gone" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_install_clean"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginTop="8dp"
-            android:minWidth="200dp"
-            android:text="@string/tc4_container_builtin_clean"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/builtin_footer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="More variants available via GitHub Actions"
-            android:visibility="gone" />
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:gravity="center" />
-    </LinearLayout>
+        </LinearLayout>
 
     <!-- ========== 加载中覆盖层 ========== -->
     <LinearLayout
