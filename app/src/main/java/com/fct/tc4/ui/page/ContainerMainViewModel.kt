@@ -143,7 +143,8 @@ class ContainerMainViewModel(
             val suPath = Global.suPath
             val containerDir = "${getApplication<Application>().dataDir.absolutePath}/$code"
             if (suPath.isNotEmpty()) {
-                // 在终端输出卸载进度
+                // 清理 VNC 端口（只杀 5901，不影响原项目的 5906）
+                Global.sendCommand("$suPath -c \"fuser -k 5901/tcp 2>/dev/null; sleep 1\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
                 viewModelScope.launch(Dispatchers.IO) {
                     ChrootManager.umountAll(suPath, containerDir)
