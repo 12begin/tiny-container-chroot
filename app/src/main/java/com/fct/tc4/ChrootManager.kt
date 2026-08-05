@@ -52,6 +52,16 @@ object ChrootManager {
     ): Boolean {
         var allSuccess = true
 
+        // 先清理所有旧的挂载点，避免反复启动退出导致挂载点堆积
+        // umount -l 会立即断开，即使进程还在使用
+        val oldMounts = getMountedList(suPath, containerDir)
+        for (line in oldMounts) {
+            val parts = line.split(" ")
+            if (parts.size >= 2) {
+                RootUtils.executeWithSu(suPath, "umount -l \"${parts[1]}\" 2>/dev/null")
+            }
+        }
+
         // 关键步骤：先 bind mount 容器目录自身，再 remount 为 exec,suid,dev
         // 和 linuxdeploy 的 mount_part root 逻辑一致：
         //   mount -o bind "${TARGET_PATH}" "${CHROOT_DIR}" &&
