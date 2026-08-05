@@ -742,6 +742,10 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                         "grep '^tiny:' \"$containerDir/etc/shadow\" 2>/dev/null")
                     appendLog("shadow 验证: $verify")
                     appendLog("密码设置完成")
+                }
+            } catch (e: Exception) {
+                appendLog("设置密码失败: ${e.message}")
+            }
             // 创建 VNC 密码文件（密码 12345678）
             try {
                 appendLog("设置 VNC 密码...")
