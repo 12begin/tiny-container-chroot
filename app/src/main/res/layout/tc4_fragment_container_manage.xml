@@ -61,7 +61,8 @@
             android:layout_marginTop="24dp"
             android:text="@string/tc4_container_builtin_list_title"
             android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:gravity="center" />
+            android:gravity="center"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_install_xfce"
@@ -70,7 +71,8 @@
             android:layout_height="48dp"
             android:layout_marginTop="12dp"
             android:minWidth="200dp"
-            android:text="@string/tc4_container_builtin_xfce" />
+            android:text="@string/tc4_container_builtin_xfce"
+            android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_install_clean"
@@ -79,7 +81,8 @@
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:minWidth="200dp"
-            android:text="@string/tc4_container_builtin_clean" />
+            android:text="@string/tc4_container_builtin_clean"
+            android:visibility="gone" />
 
         <TextView
             android:id="@+id/builtin_footer"
@@ -87,6 +90,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="More variants available via GitHub Actions"
+            android:visibility="gone" />
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:gravity="center" />

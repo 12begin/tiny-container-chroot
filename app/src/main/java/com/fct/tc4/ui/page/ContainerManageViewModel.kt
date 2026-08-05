@@ -366,7 +366,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                         input.copyTo(output, bufferSize = 8192)
                     }
                 } ?: throw IllegalStateException(app.getString(R.string.tc4_validate_clipboard_read))
-
+                if (cacheFile.length() == 0L) {
+                    throw IllegalStateException("文件为空")
+                }
                 processCachedRootfs()
             } catch (e: Exception) {
                 cleanCacheFiles()
