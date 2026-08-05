@@ -361,19 +361,35 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val app = getApplication<Application>()
             try {
                 val cacheFile = File(app.cacheDir, "rootfs.tar.zst")
-                app.contentResolver.openInputStream(uri)?.use { input ->
+                // 先删除旧的缓存文件
+                if (cacheFile.exists()) cacheFile.delete()
+                val inputStream = app.contentResolver.openInputStream(uri)
+                    ?: throw IllegalStateException("无法读取文件")
+                inputStream.use { input ->
                     cacheFile.outputStream().use { output ->
                         input.copyTo(output, bufferSize = 8192)
                     }
-                } ?: throw IllegalStateException(app.getString(R.string.tc4_validate_clipboard_read))
-                if (cacheFile.length() == 0L) {
-                    throw IllegalStateException("文件为空")
                 }
-                processCachedRootfs()
+                if (cacheFile.length() == 0L) {
+                    throw IllegalStateException("文件复制后为空，请检查文件是否有效")
+                }
+                // 直接安装，跳过配置提取（因为导入的包可能没有 .tiny.yaml）
+                val code = "xfce"
+                performInstall(code, mapOf(
+                    "code" to code,
+                    "name" to "XFCE Desktop",
+                    "description" to "Imported Container",
+                    "chroot_boot_command" to "/bin/bash --login",
+                    "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
+                ))
+                _installState.value = InstallState.Completed(
+                    launchAfterInstall = false,
+                    code = code
+                )
             } catch (e: Exception) {
                 cleanCacheFiles()
                 _installState.value = InstallState.Failed(
-                    app.getString(R.string.tc4_import_failed, e.message ?: ""))
+                    "导入失败: ${e.message}")
             }
         }
     }
