@@ -515,7 +515,6 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         _installState.value = InstallState.ExtractingConfig
 
-        // 尝试用 execShell + tar 提取 .tiny.yaml
         val cacheDir = app.cacheDir.absolutePath
         val rootfsFile = File(app.cacheDir, "rootfs.tar.zst")
         if (!rootfsFile.exists()) {
@@ -524,11 +523,19 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             return null
         }
 
-        // 方式一：通过 execShell 提取（原版方式）
-        val extracted = extractConfigViaExecShell(app, cacheDir)
-        if (!extracted) {
-            // 方式一失败，尝试方式二：直接通过 ProcessBuilder 调用 tar
-            extractConfigViaProcessBuilder(app, cacheDir)
+        // 用 su -c 执行 zstd + tar 提取 .tiny.yaml（和 performInstall 中的解压方式一致）
+        val suPath = Global.suPath
+        if (suPath.isNotEmpty()) {
+            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+            // 先解压 zstd
+            RootUtils.executeWithSu(suPath,
+                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -f \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
+            // 再用 tar 提取 .tiny.yaml
+            RootUtils.executeWithSu(suPath,
+                "LD_LIBRARY_PATH=$bLib $bDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
+            // 清理临时 tar 文件
+            File(cacheDir, "rootfs.tar").delete()
         }
 
         val configFile = File(app.cacheDir, ".tiny.yaml")
@@ -547,47 +554,6 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             return null
         }
         return config
-    }
-
-    /** 通过 execShell 提取 .tiny.yaml */
-    private suspend fun extractConfigViaExecShell(app: Application, cacheDir: String): Boolean {
-        return try {
-            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            execShell {
-                // 先解压 zstd，再用 tar 提取（避免 tar 不支持 zstd 的问题）
-                Global.sendCommand("$bootstrapDir/zstd -d -f \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
-                Global.sendCommand("$bootstrapDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
-                Global.sendCommand("exit")
-            }
-            File(app.cacheDir, ".tiny.yaml").exists()
-        } catch (_: Exception) {
-            false
-        }
-    }
-
-    /** 通过 ProcessBuilder 提取 .tiny.yaml（备用方案） */
-    private fun extractConfigViaProcessBuilder(app: Application, cacheDir: String) {
-        try {
-            val bootstrapDir = "${app.filesDir.absolutePath}/bootstrap/bin"
-            val env = mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib")
-
-            // 1. 先解压 zstd
-            val zstd = ProcessBuilder("$bootstrapDir/zstd", "-d", "-f",
-                "$cacheDir/rootfs.tar.zst", "-o", "$cacheDir/rootfs.tar")
-            zstd.environment().putAll(env)
-            zstd.start().waitFor(120, java.util.concurrent.TimeUnit.SECONDS)
-
-            // 2. 再用 tar 提取 .tiny.yaml
-            val tar = ProcessBuilder("$bootstrapDir/tar", "-xf",
-                "$cacheDir/rootfs.tar", "-C", cacheDir, ".tiny.yaml")
-            tar.environment().putAll(env)
-            tar.start().waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
-
-            // 清理临时 tar 文件
-            File(cacheDir, "rootfs.tar").delete()
-        } catch (_: Exception) {
-            File(cacheDir, "rootfs.tar").delete()
-        }
     }
 
     /** 执行实际的容器安装操作（解压 rootfs、修复权限、保存配置），调用方负责状态管理 */
