@@ -123,14 +123,7 @@ class ContainerManageFragment : Fragment() {
             viewModel.loadContainers()
         }
 
-        // 内置容器按钮（已移除，只保留导入功能）
-        binding.btnInstallXfce.visibility = View.GONE
-        binding.btnInstallClean.visibility = View.GONE
-        binding.builtinListTitle.visibility = View.GONE
-        binding.builtinFooter.visibility = View.GONE
-        binding.btnInstallXfce.setOnClickListener(null)
-        binding.btnInstallClean.setOnClickListener(null)
-
+        // 内置容器按钮（已移除）
         // ====== 页面状态 ======
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -169,10 +162,6 @@ class ContainerManageFragment : Fragment() {
                 viewModel.containers.collect { list ->
                     val isIdle = viewModel.pageState.value is ContainerManagePageState.Idle
                     binding.emptyHint.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
-                    binding.builtinListTitle.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
-                    binding.btnInstallXfce.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
-                    binding.btnInstallClean.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
-                    binding.builtinFooter.visibility = if (list.isEmpty() && isIdle) View.VISIBLE else View.GONE
                     adapter.submitList(list) {
                         binding.indicator.setupWithViewPager(binding.viewpager)
                         val pos = viewModel.selectedPosition.value
