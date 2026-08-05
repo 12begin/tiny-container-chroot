@@ -373,15 +373,17 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 if (cacheFile.length() == 0L) {
                     throw IllegalStateException("文件复制后为空，请检查文件是否有效")
                 }
-                // 直接安装，不提取 .tiny.yaml（避免 zstd 解压后删除源文件）
-                val code = "xfce"
-                performInstall(code, mapOf(
+                // 先尝试提取 .tiny.yaml（用 --keep 保留源文件，避免 zstd 删除）
+                val config = extractAndParseConfig()
+                val code = config?.get("code") as? String ?: "xfce"
+                val mergedConfig = config ?: mapOf(
                     "code" to code,
                     "name" to "XFCE Desktop",
                     "description" to "Imported Container",
                     "chroot_boot_command" to "/bin/bash --login",
                     "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
-                ))
+                )
+                performInstall(code, mergedConfig)
                 _installState.value = InstallState.Completed(
                     launchAfterInstall = false,
                     code = code
@@ -562,9 +564,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         if (suPath.isNotEmpty()) {
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            // 先解压 zstd
+            // 先解压 zstd（--keep 保留源文件）
             RootUtils.executeWithSu(suPath,
-                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -f \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
+                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -f --keep \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
             // 再用 tar 提取 .tiny.yaml
             RootUtils.executeWithSu(suPath,
                 "LD_LIBRARY_PATH=$bLib $bDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
