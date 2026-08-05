@@ -75,6 +75,7 @@ feature:
     export XDG_RUNTIME_DIR="/tmp/runtime-tiny"; \
     mkdir -p $XDG_RUNTIME_DIR; \
     rm -f /tmp/.X1-lock /tmp/.X11-unix/X1 2>/dev/null; \
+    fuser -k 5901/tcp 2>/dev/null; \
     Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport 5901 \
     -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -depth 24 \
     -SecurityTypes None -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :1 -extension MIT-SHM > /dev/null 2>&1 & \
