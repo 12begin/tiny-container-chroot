@@ -12,7 +12,7 @@ on:
         required: true
         default: 'all'
         type: choice
-        options: [all, xfce, gxde, clean]
+        options: [all, xfce, gxde, clean, xfce-test]
       build_type:
         description: 'APK 类型（debug/release/all）'
         required: true
@@ -37,6 +37,9 @@ jobs:
               ;;
             gxde)
               echo 'matrix={"include":[{"rootfs":"gxde-zh","suffix":"gxde-zh"},{"rootfs":"gxde-en","suffix":"gxde-en"}]}' >> $GITHUB_OUTPUT
+              ;;
+            xfce-test)
+              echo 'matrix={"include":[{"rootfs":"test","suffix":"xfce-test"}]}' >> $GITHUB_OUTPUT
               ;;
             clean)
               echo 'matrix={"include":[{"rootfs":"none","suffix":"clean"}]}' >> $GITHUB_OUTPUT
@@ -81,9 +84,14 @@ jobs:
             xfce-en) FILE="xfce-en-20260628-072838.tar.zst" ;;
             gxde-zh) FILE="gxde-zh-20260626-110317.tar.zst" ;;
             gxde-en) FILE="gxde-en-20260626-110344.tar.zst" ;;
+            test) URL="https://github.com/12begin/tiny-container-chroot-rootfs/releases/download/v1/rootfs.tar.zst" ;;
           esac
-          curl -sL -o app/src/main/assets/rootfs.tar.zst \
-            "https://github.com/tiny-computer/images/releases/download/260627/${FILE}"
+          if [ "${{ matrix.rootfs }}" = "test" ]; then
+            curl -sL -o app/src/main/assets/rootfs.tar.zst "$URL"
+          else
+            curl -sL -o app/src/main/assets/rootfs.tar.zst \
+              "https://github.com/tiny-computer/images/releases/download/260627/${FILE}"
+          fi
           ls -lh app/src/main/assets/rootfs.tar.zst
 
       - name: 解码签名密钥
