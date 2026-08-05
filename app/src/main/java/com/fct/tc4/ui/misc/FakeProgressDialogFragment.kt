@@ -82,13 +82,21 @@ class FakeProgressDialogFragment : DialogFragment() {
             }
         }
 
-        // 监听安装日志
+        // 监听安装状态，完成后自动关闭
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.installState.collect { state ->
-                    if (state is InstallState.Installing && state.log.isNotBlank()) {
-                        binding.logScroll.visibility = View.VISIBLE
-                        binding.logText.text = state.log
+                    when (state) {
+                        is InstallState.Installing -> {
+                            if (state.log.isNotBlank()) {
+                                binding.logScroll.visibility = View.VISIBLE
+                                binding.logText.text = state.log
+                            }
+                        }
+                        is InstallState.Completed, is InstallState.Failed -> {
+                            dismiss()
+                        }
+                        else -> {}
                     }
                 }
             }
