@@ -143,11 +143,18 @@ class ContainerMainViewModel(
             val suPath = Global.suPath
             val containerDir = "${getApplication<Application>().dataDir.absolutePath}/$code"
             if (suPath.isNotEmpty()) {
-                // 清理 VNC 端口（只杀 5901，不影响原项目的 5906）
-                Global.sendCommand("$suPath -c \"fuser -k 5901/tcp 2>/dev/null; sleep 1\"")
+                // 模仿 linuxdeploy 的退出流程，逐步输出日志
+                Global.sendCommand("echo \">>> stop\"")
+                Global.sendCommand("echo \"正在停止 VNC 服务...\"")
+                Global.sendCommand("$suPath -c \"fuser -k 5901/tcp 2>/dev/null && echo 'VNC 已停止' || echo 'VNC 未运行'\"")
+                Global.sendCommand("echo \"正在停止容器进程...\"")
+                Global.sendCommand("$suPath -c \"lsof | grep '$containerDir' | awk '{print \\$2}' | xargs -r kill 2>/dev/null; echo '进程已清理'\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
                 viewModelScope.launch(Dispatchers.IO) {
                     ChrootManager.umountAll(suPath, containerDir)
+                    // 通过 terminal session 输出卸载结果
+                    Global.sendCommand("echo \"文件系统已卸载\"")
+                    Global.sendCommand("echo \"<<< stop\"")
                     Global.sendCommand("echo \"容器已安全退出\"")
                 }
             }
