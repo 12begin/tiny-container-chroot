@@ -44,4 +44,12 @@
             android:textColor="?attr/colorOnSurfaceVariant" />
     </ScrollView>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_close"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:text="关闭"
+        android:visibility="gone" />
+
 </LinearLayout>
