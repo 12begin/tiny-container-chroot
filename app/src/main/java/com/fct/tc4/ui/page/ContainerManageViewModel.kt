@@ -564,9 +564,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         if (suPath.isNotEmpty()) {
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            // zstd -d -c 解压到 stdout，tar -xO 提取 .tiny.yaml 到 stdout，重定向到文件
+            // zstd -d -c 解压到 stdout，tar -xf - -O 从 stdin 读取并提取 .tiny.yaml 到 stdout
             RootUtils.executeWithSu(suPath,
-                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -c \"$cacheDir/rootfs.tar.zst\" 2>/dev/null | $bDir/tar -xO .tiny.yaml 2>/dev/null > \"$cacheDir/.tiny.yaml\"")
+                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -c \"$cacheDir/rootfs.tar.zst\" 2>/dev/null | $bDir/tar -xf - -O .tiny.yaml 2>/dev/null > \"$cacheDir/.tiny.yaml\"")
         }
 
         val configFile = File(app.cacheDir, ".tiny.yaml")
