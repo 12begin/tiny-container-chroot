@@ -720,9 +720,12 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 appendLog("设置 tiny 用户空密码...")
                 val suPath = Global.suPath
                 if (suPath.isNotEmpty()) {
-                    // 直接修改 shadow 文件，把 tiny 的密码字段置空
+                    // 方式一：直接修改 shadow 文件
                     RootUtils.executeWithSu(suPath,
                         "sed -i 's/^tiny:[^:]*/tiny::/' \"$containerDir/etc/shadow\" 2>/dev/null")
+                    // 方式二：用 chroot + passwd -d 删除密码
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /bin/passwd -d tiny 2>/dev/null")
                     // 修复 /bin/bash 和 /home/tiny 的权限，让 tiny 用户能正常登录
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/bin/bash\" \"$containerDir/bin/sh\" 2>/dev/null")
