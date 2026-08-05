@@ -78,12 +78,11 @@ feature:
     fuser -k 5901/tcp 2>/dev/null; \
     mkdir -p /tmp/.X11-unix 2>/dev/null; \
     touch /tmp/.tiny.vnc 2>/dev/null && rm -f /tmp/.tiny.vnc; \
-    echo "tiny:tiny" | chpasswd 2>/dev/null; \
     Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport 5901 \
     -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -depth 24 \
     -SecurityTypes None -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :1 -extension MIT-SHM > /tmp/vnc.log 2>&1 & \
     while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
-    echo "tiny" | su - tiny -c "DISPLAY=:1 startxfce4" > /dev/null 2>&1 &
+    su - tiny -c "DISPLAY=:1 startxfce4" > /dev/null 2>&1 &
   link: vnc://127.0.0.1:5901
   enabled: true
   adapt_to_screen_size: true

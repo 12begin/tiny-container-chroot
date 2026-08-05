@@ -720,12 +720,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 appendLog("设置 tiny 用户空密码...")
                 val suPath = Global.suPath
                 if (suPath.isNotEmpty()) {
-                    // 方式一：直接修改 shadow 文件
+                    // 直接修改 shadow 文件，把 tiny 的密码字段置空
+                    // 方式一：sed 直接修改
                     RootUtils.executeWithSu(suPath,
                         "sed -i 's/^tiny:[^:]*/tiny::/' \"$containerDir/etc/shadow\" 2>/dev/null")
-                    // 方式二：用 chroot + passwd -d 删除密码
+                    // 方式二：用 cat + sed 覆盖写入（避免 sed -i 的临时文件问题）
                     RootUtils.executeWithSu(suPath,
-                        "chroot \"$containerDir\" /bin/passwd -d tiny 2>/dev/null")
+                        "cat \"$containerDir/etc/shadow\" | sed 's/^tiny:[^:]*/tiny::/' > \"$containerDir/etc/shadow.tmp\" && mv \"$containerDir/etc/shadow.tmp\" \"$containerDir/etc/shadow\" 2>/dev/null")
+                    // 方式三：用 chroot + busybox passwd -d（如果 busybox 可执行）
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /bin/busybox passwd -d tiny 2>/dev/null")
                     // 修复 /bin/bash 和 /home/tiny 的权限，让 tiny 用户能正常登录
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/bin/bash\" \"$containerDir/bin/sh\" 2>/dev/null")
@@ -733,11 +737,11 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                         "chown 10337:10337 \"$containerDir/home/tiny\" 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/home/tiny\" 2>/dev/null")
+                    // 验证
+                    val verify = RootUtils.executeWithSu(suPath,
+                        "grep '^tiny:' \"$containerDir/etc/shadow\" 2>/dev/null")
+                    appendLog("shadow 验证: $verify")
                     appendLog("密码设置完成")
-                }
-            } catch (e: Exception) {
-                appendLog("设置密码失败: ${e.message}")
-            }
             // 创建 VNC 密码文件（密码 12345678）
             try {
                 appendLog("设置 VNC 密码...")
