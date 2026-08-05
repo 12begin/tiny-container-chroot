@@ -109,10 +109,12 @@ object ChrootManager {
         }
 
         // 从挂载行中提取目标路径（第二个字段）
+        // 注意：排除 containerDir 自身（bind mount 自身），
+        // 卸载它会导致容器目录不可访问
         val targets = mountList.mapNotNull { line ->
             val parts = line.split(" ")
             if (parts.size >= 2) parts[1] else null
-        }.filter { it.startsWith(containerDir) }
+        }.filter { it.startsWith(containerDir) && it != containerDir }
 
         // 逆序卸载（先卸载最内层的挂载）
         for (target in targets.reversed()) {
@@ -133,16 +135,6 @@ object ChrootManager {
                 Log.w(TAG, "卸载失败（3次尝试）: $target")
             }
         }
-
-        // 最后检查容器目录自身的 bind mount 是否还在
-        try {
-            val stillMounted = RootUtils.executeWithSu(suPath,
-                "mount | grep \" on $containerDir \"")
-            if (stillMounted != null) {
-                RootUtils.executeWithSu(suPath, "umount -l \"$containerDir\" 2>/dev/null")
-                Log.d(TAG, "已卸载容器目录 bind mount: $containerDir")
-            }
-        } catch (_: Exception) {}
     }
 
     /**
