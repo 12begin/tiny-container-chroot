@@ -135,7 +135,6 @@ class ContainerMainFragment : Fragment() {
                         }
                         is GuiNavigationEvent.OpenAvnc -> {
                             val uri = event.link.toUri().buildUpon()
-                                .appendQueryParameter("UnixSocket", "${requireContext().cacheDir.absolutePath}/tmp/.tiny.vnc")
                                 .build()
                             val profile = VncUri(uri.toString()).toServerProfile().apply {
                                 resizeRemoteDesktop = event.adaptToScreenSize

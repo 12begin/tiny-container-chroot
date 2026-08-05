@@ -263,34 +263,43 @@ object Global {
                 "lib__opt__virglrenderer-android__lib__libepoxy.so__.so"
             )
 
-            for (fileName in requiredFiles) {
-                try {
-                    val target = File(appLibDir, fileName)
-                    if (!target.exists()) {
-                        appContext.assets.open("jni/$fileName").use { input ->
-                            target.outputStream().use { output ->
-                                input.copyTo(output, bufferSize = 8192)
+            // 最多重试 3 次，确保所有文件都复制完成
+            for (attempt in 1..3) {
+                var allDone = true
+                for (fileName in requiredFiles) {
+                    try {
+                        val target = File(appLibDir, fileName)
+                        if (!target.exists() || target.length() == 0L) {
+                            allDone = false
+                            appContext.assets.open("jni/$fileName").use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output, bufferSize = 8192)
+                                }
                             }
                         }
-                    }
-                } catch (_: Exception) {}
+                    } catch (_: Exception) {}
+                }
+                if (allDone) break
+                Thread.sleep(200)
             }
 
             // 也复制 list() 返回的其他文件（如果有）
-            val extraFiles = appContext.assets.list("jni") ?: return
-            for (fileName in extraFiles) {
-                if (fileName in requiredFiles) continue
-                try {
-                    val target = File(appLibDir, fileName)
-                    if (!target.exists()) {
-                        appContext.assets.open("jni/$fileName").use { input ->
-                            target.outputStream().use { output ->
-                                input.copyTo(output, bufferSize = 8192)
+            try {
+                val extraFiles = appContext.assets.list("jni") ?: return
+                for (fileName in extraFiles) {
+                    if (fileName in requiredFiles) continue
+                    try {
+                        val target = File(appLibDir, fileName)
+                        if (!target.exists()) {
+                            appContext.assets.open("jni/$fileName").use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output, bufferSize = 8192)
+                                }
                             }
                         }
-                    }
-                } catch (_: Exception) {}
-            }
+                    } catch (_: Exception) {}
+                }
+            } catch (_: Exception) {}
         } catch (_: Exception) {}
     }
 
