@@ -1,10 +1,10 @@
 # 小小容器（Chroot）容器配置文件
-# 基于 tmoe 版配置改写，适配 chroot 模式
+# 基于 proot-distro.tiny.yaml 改写，适配 chroot 模式
 
 # 代号必须是合法文件名，容器会被放到以该值命名的文件夹
 code: "xfce"
 name: "Debian 13 XFCE"
-description: "最经典的容器，包含 Windows 风格主题和开箱即用的火狐浏览器、中文输入法。"
+description: "最经典的容器，包含 Windows 风格主题和开箱即用的火狐浏览器、中文输入法，从小小电脑 v1.0.6 起一直沿用至今。"
 # 图片预览。只能是图片地址。
 preview: "/home/tiny/.local/share/backgrounds/Fluent-building-day.png"
 # 介绍你的容器的网页。可以缺失。
@@ -67,7 +67,6 @@ chroot_boot_command: |
 
 # 导出命令（chroot 版）
 export_command: |
-  rm -f /tmp/.tiny.vnc /tmp/.X1-lock 2>/dev/null; \
   apt clean && apt autoclean && apt autoremove --purge -y; \
   rm -rf /tmp/* /var/tmp/* 2>/dev/null; \
   rm -rf /root/.cache/* /home/tiny/.cache/* 2>/dev/null; \
@@ -111,6 +110,20 @@ quick_commands:
     command: sudo apt clean
 
   - type: "commands"
+    name: 安装 XFCE 图形界面
+    description: 基本上预装 XFCE 的容器就是这么做的。
+    commands:
+    - type: "command"
+      name: 安装图形界面
+      description: 一次性安装 xfce, tigervnc和pipewire。
+      command: >
+        sudo apt update &&
+        sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+        -o Dpkg::Options::="--force-confdef"
+        -o Dpkg::Options::="--force-confold" install dbus-x11 xfce4 tigervnc-standalone-server pipewire &&
+        sudo apt autoremove --purge pulseaudio
+
+  - type: "commands"
     name: 软件管理
     description: 在这里安装或卸载少数几个软件。想要更多还得自行熟悉 Linux 系统操作...
     commands:
@@ -145,6 +158,61 @@ quick_commands:
           - type: "command"
             name: 卸载
             command: sudo apt autoremove --purge -y octave
+
+      - type: "commands"
+        name: Chromium 浏览器
+        description: 安装后，通过 Chromium No Sandbox 来打开浏览器。
+        commands:
+          - type: "command"
+            name: 安装
+            command: >
+              sudo apt update &&
+              sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+              -o Dpkg::Options::="--force-confdef"
+              -o Dpkg::Options::="--force-confold"
+              install chromium chromium-l10n -y &&
+              cp /usr/share/applications/chromium.desktop /usr/share/applications/chromium-no-sandbox.desktop &&
+              sed -i '/^Name\[.*\]=.*/d; s/^Name=.*/Name=Chromium No Sandbox/' /usr/share/applications/chromium-no-sandbox.desktop &&
+              sed -i 's#Exec=/usr/bin/chromium %U#Exec=/usr/bin/chromium --no-sandbox %U#g' /usr/share/applications/chromium-no-sandbox.desktop
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y chromium chromium-l10n && rm /usr/share/applications/chromium-no-sandbox.desktop
+
+      - type: "commands"
+        name: Visual Studio Code
+        description: 安装后，通过 Code No Sandbox 来打开 VS Code。
+        commands:
+          - type: "command"
+            name: 安装
+            command: >
+              curl -L -o /tmp/vscode.deb 'https://aka.ms/linux-arm64-deb' &&
+              sudo apt update &&
+              sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+              -o Dpkg::Options::="--force-confdef"
+              -o Dpkg::Options::="--force-confold"
+              install /tmp/vscode.deb &&
+              cp /usr/share/applications/code.desktop /usr/share/applications/code-no-sandbox.desktop &&
+              sed -i '/^Name$$.*$$=.*/d; s/^Name=.*/Name=Code No Sandbox/' /usr/share/applications/code-no-sandbox.desktop &&
+              sed -i 's#Exec=/usr/share/code/code %F#Exec=/usr/share/code/code --no-sandbox %F#g' /usr/share/applications/code-no-sandbox.desktop;
+              rm /tmp/vscode.deb
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y code && sudo rm -f /usr/share/applications/code-no-sandbox.desktop
+
+      - type: "commands"
+        name: 常用国产软件
+        description: 安装或卸载常用的国产软件。
+        commands:
+          - type: "commands"
+            name: QQ
+            commands:
+              - type: "command"
+                name: 安装
+                command: |
+                  wget $(curl -s https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/linuxConfig.js | grep -oP '"armDownloadUrl":{[^}]*"deb":"\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb
+              - type: "command"
+                name: 卸载
+                command: sudo apt autoremove --purge -y linuxqq
 
 # 选项
 options:
