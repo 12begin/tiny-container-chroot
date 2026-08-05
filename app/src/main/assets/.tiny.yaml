@@ -74,16 +74,11 @@ feature:
     eval `dbus-launch --sh-syntax`; \
     export XDG_RUNTIME_DIR="/tmp/runtime-tiny"; \
     mkdir -p $XDG_RUNTIME_DIR; \
-    python3 -c "
-import hashlib, struct
-pw = '12345678'
-key = pw.encode()[:8].ljust(8, b'\\x00')
-with open('/tmp/vncpasswd', 'wb') as f:
-    f.write(key)
-" 2>/dev/null; chmod 600 /tmp/vncpasswd; \
     Xtigervnc -geometry 1440x720 -ZlibLevel=0 -pn -rfbport 5900 \
     -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -once -depth 24 \
-    -rfbauth /tmp/vncpasswd -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :0 -extension MIT-SHM > /dev/null 2>&1 & \
+    -rfbauth /root/.vnc/passwd -desktop "Debian-GNU/Linux-13-(trixie)_pd-tiny-linux-vnc" :0 -extension MIT-SHM > /dev/null 2>&1 & \
+    while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
+    startxfce4 > /dev/null 2>&1 &
     while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
     startxfce4 > /dev/null 2>&1 &
   link: vnc://127.0.0.1:5900

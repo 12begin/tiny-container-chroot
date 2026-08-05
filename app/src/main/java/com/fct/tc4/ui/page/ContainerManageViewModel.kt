@@ -735,6 +735,21 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             } catch (e: Exception) {
                 appendLog("设置密码失败: ${e.message}")
             }
+            // 创建 VNC 密码文件（密码 12345678）
+            try {
+                appendLog("设置 VNC 密码...")
+                val suPath = Global.suPath
+                if (suPath.isNotEmpty()) {
+                    // 使用 chroot 进入容器执行 vncpasswd，从标准输入读取密码
+                    RootUtils.executeWithSu(suPath,
+                        "echo '12345678\n12345678' | chroot \"$containerDir\" /usr/bin/vncpasswd -f > \"$containerDir/root/.vnc/passwd\" 2>/dev/null")
+                    RootUtils.executeWithSu(suPath,
+                        "chmod 600 \"$containerDir/root/.vnc/passwd\" 2>/dev/null")
+                    appendLog("VNC 密码设置完成")
+                }
+            } catch (e: Exception) {
+                appendLog("设置 VNC 密码失败: ${e.message}")
+            }
             // 复制 bootstrap busybox 到容器内，作为 chroot 的静态入口
             try {
                 val srcBusybox = File("$bDir/busybox")
