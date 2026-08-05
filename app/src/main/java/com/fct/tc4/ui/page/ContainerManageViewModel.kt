@@ -494,8 +494,24 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
     /** 从已复制到 cache 的 rootfs.tar.zst 中提取配置，进入等待确认状态 */
     private suspend fun processCachedRootfs() {
-        val config = extractAndParseConfig() ?: return
+        val config = extractAndParseConfig()
         val cacheFile = File(getApplication<Application>().cacheDir, "rootfs.tar.zst")
+        if (config == null) {
+            // 提取配置失败，用默认配置直接安装（和内置容器安装一致）
+            val code = "xfce"
+            performInstall(code, mapOf(
+                "code" to code,
+                "name" to "XFCE Desktop",
+                "description" to "XFCE Desktop Environment",
+                "chroot_boot_command" to "/bin/bash --login",
+                "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
+            ))
+            _installState.value = InstallState.Completed(
+                launchAfterInstall = false,
+                code = code
+            )
+            return
+        }
         val code = config["code"] as? String ?: ""
         if (code.isBlank()) {
             cleanCacheFiles()
