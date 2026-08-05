@@ -147,9 +147,9 @@ class ContainerMainViewModel(
                 Global.sendCommand("echo \">>> stop\"")
                 Global.sendCommand("echo \"正在停止 VNC 服务...\"")
                 Global.sendCommand("$suPath -c \"fuser -k 5901/tcp 2>/dev/null && echo 'VNC 已停止' || echo 'VNC 未运行'\"")
-                Global.sendCommand("echo \"正在停止容器进程...\"")
-                Global.sendCommand("$suPath -c \"lsof | grep '$containerDir' | awk '{print \\$2}' | xargs -r kill 2>/dev/null; echo '进程已清理'\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
+                // 注意：不能用 lsof 搜索容器目录，会误杀原项目的进程
+                // umount -l 会立即断开挂载点，即使进程还在使用
                 viewModelScope.launch(Dispatchers.IO) {
                     ChrootManager.umountAll(suPath, containerDir)
                     // 通过 terminal session 输出卸载结果

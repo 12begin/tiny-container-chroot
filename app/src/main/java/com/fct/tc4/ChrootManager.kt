@@ -107,16 +107,9 @@ object ChrootManager {
      * @param containerDir 容器的根文件系统目录
      */
     fun umountAll(suPath: String, containerDir: String) {
-        // 先 kill 占用容器目录的进程（精确匹配，不会误杀原项目）
-        try {
-            val pids = RootUtils.executeWithSu(suPath,
-                "lsof -t \"$containerDir\" 2>/dev/null | head -50")
-            if (pids != null && pids.isNotBlank()) {
-                RootUtils.executeWithSu(suPath,
-                    "kill -9 ${pids.trim().lines().joinToString(" ")} 2>/dev/null")
-                Thread.sleep(300)
-            }
-        } catch (_: Exception) {}
+        // 不 kill 任何进程，直接用 lazy umount
+        // 注意：不能用 lsof 搜索容器目录，会误杀原项目进程
+        // umount -l 会立即断开，即使进程还在使用，进程退出后自动清理
 
         // 从 /proc/mounts 获取所有容器相关的挂载点
         val mountList = getMountedList(suPath, containerDir)
