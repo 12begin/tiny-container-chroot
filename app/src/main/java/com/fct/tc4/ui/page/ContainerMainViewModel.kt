@@ -231,13 +231,17 @@ class ContainerMainViewModel(
 mount -o bind "$containerDir" "$containerDir" 2>/dev/null
 mount -o remount,exec,suid,dev "$containerDir" 2>/dev/null
 
-# 2. 挂载 proc/sys/dev/dev/pts/dev/shm
-mkdir -p "$containerDir/proc" "$containerDir/sys" "$containerDir/dev" "$containerDir/dev/pts" "$containerDir/dev/shm" 2>/dev/null
+# 2. 挂载 proc/sys/dev/dev/pts/dev/shm/system/vendor/apex
+mkdir -p "$containerDir/proc" "$containerDir/sys" "$containerDir/dev" "$containerDir/dev/pts" "$containerDir/dev/shm" "$containerDir/system" "$containerDir/vendor" "$containerDir/apex" 2>/dev/null
 mount -t proc proc "$containerDir/proc" 2>/dev/null
 mount -t sysfs sysfs "$containerDir/sys" 2>/dev/null
 mount -o bind /dev "$containerDir/dev" 2>/dev/null
 mount -o bind /dev/pts "$containerDir/dev/pts" 2>/dev/null
 mount -t tmpfs -o mode=1777 tmpfs "$containerDir/dev/shm" 2>/dev/null
+mount -o bind /system "$containerDir/system" 2>/dev/null
+mount -o bind /vendor "$containerDir/vendor" 2>/dev/null
+# 绑定 /apex 目录（Android 12+ 的 APEX 模块）
+if [ -d /apex ]; then mount -o bind /apex "$containerDir/apex" 2>/dev/null; fi
 
 # 3. 绑定 cache/tmp → /tmp, cache/run → /run
 mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
