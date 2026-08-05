@@ -559,19 +559,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             return null
         }
 
-        // 用 su -c 执行 zstd + tar 提取 .tiny.yaml（和 performInstall 中的解压方式一致）
+        // 用管道从 .tar.zst 直接提取 .tiny.yaml，不生成中间 tar 文件
         val suPath = Global.suPath
         if (suPath.isNotEmpty()) {
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
             val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
-            // 先解压 zstd（--keep 保留源文件）
+            // zstd -d -c 解压到 stdout，tar -xO 提取 .tiny.yaml 到 stdout，重定向到文件
             RootUtils.executeWithSu(suPath,
-                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -f --keep \"$cacheDir/rootfs.tar.zst\" -o \"$cacheDir/rootfs.tar\" 2>/dev/null")
-            // 再用 tar 提取 .tiny.yaml
-            RootUtils.executeWithSu(suPath,
-                "LD_LIBRARY_PATH=$bLib $bDir/tar -xf \"$cacheDir/rootfs.tar\" -C \"$cacheDir\" .tiny.yaml 2>/dev/null")
-            // 清理临时 tar 文件
-            File(cacheDir, "rootfs.tar").delete()
+                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -c \"$cacheDir/rootfs.tar.zst\" 2>/dev/null | $bDir/tar -xO .tiny.yaml 2>/dev/null > \"$cacheDir/.tiny.yaml\"")
         }
 
         val configFile = File(app.cacheDir, ".tiny.yaml")
