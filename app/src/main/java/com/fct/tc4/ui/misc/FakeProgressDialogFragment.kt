@@ -82,7 +82,7 @@ class FakeProgressDialogFragment : DialogFragment() {
             }
         }
 
-        // 监听安装状态，完成后显示关闭按钮
+        // 监听安装状态，完成后自动关闭
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.installState.collect { state ->
@@ -94,8 +94,7 @@ class FakeProgressDialogFragment : DialogFragment() {
                             }
                         }
                         is InstallState.Completed, is InstallState.Failed -> {
-                            binding.btnClose.visibility = View.VISIBLE
-                            binding.title.text = if (state is InstallState.Completed) "安装完成" else "安装失败"
+                            dismiss()
                         }
                         else -> {}
                     }
