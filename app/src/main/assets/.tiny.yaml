@@ -1,5 +1,6 @@
 # 小小容器（Chroot）容器配置文件
-# 基于 proot-distro.tiny.yaml 改写，适配 chroot 模式
+# 基于 proot-distro.tiny.yaml 完整改写，适配 chroot 模式
+# 保留了原版所有功能，仅将 proot 专用参数改为 chroot 兼容方式
 
 # 代号必须是合法文件名，容器会被放到以该值命名的文件夹
 code: "xfce"
@@ -22,6 +23,16 @@ feature:
   - type: "microphone"
     name: "麦克风转发"
     description: "启动麦克风，将音频实时转发到容器。麦克风持续开启会比较耗电，记得关闭！"
+
+  # webview类型
+  - type: "webview"
+    name: "WebView前端示例"
+    description: |
+      启用后，下次启动容器后将执行命令，并在端口就绪后用全屏WebView加载链接。
+      链接被分享时，所有"localhost""127.0.0.1"会被替换成局域网ip地址。
+    command: "# python3 -m http.server &"
+    link: "http://localhost:8000/"
+    enabled: false
 
   # avnc类型（VNC 图形界面）
   - type: "avnc"
@@ -123,13 +134,66 @@ quick_commands:
         -o Dpkg::Options::="--force-confold" install dbus-x11 xfce4 tigervnc-standalone-server pipewire &&
         sudo apt autoremove --purge pulseaudio
 
+    - type: "command"
+      name: 安装 Yaru 主题
+      description: "会让你的界面看上去像 Ubuntu。\n仅安装主题，不包含配置步骤。\n你仍需要去外观设置手动选择主题，手动更换图标、壁纸、边栏位置等等。"
+      command: >
+        sudo apt update &&
+        sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+        -o Dpkg::Options::="--force-confdef"
+        -o Dpkg::Options::="--force-confold" install yaru-theme-gtk yaru-theme-icon
+
+    - type: "command"
+      name: 安装 Breeze 主题
+      description: "会让你的界面看上去像使用 KDE 的桌面。\n仅安装主题，不包含配置步骤。\n你仍需要去外观设置手动选择主题，手动更换图标、壁纸、边栏位置等等。"
+      command: >
+        sudo apt update &&
+        sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+        -o Dpkg::Options::="--force-confdef"
+        -o Dpkg::Options::="--force-confold" install breeze-gtk-theme breeze-icon-theme breeze-wallpaper breeze-cursor-theme
+
+    - type: "command"
+      name: 安装 rime 输入法
+      description: 安装 fcitx rime 输入法。安装后需要去选项配置-杂项中启用 fcitx 输入法。
+      command: >
+        sudo apt update &&
+        sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+        -o Dpkg::Options::="--force-confdef"
+        -o Dpkg::Options::="--force-confold" install fcitx5-rime
+
   - type: "commands"
     name: 软件管理
-    description: 在这里安装或卸载少数几个软件。想要更多还得自行熟悉 Linux 系统操作...
+    description: |
+      在这里安装或卸载少数几个软件。想要更多还得自行熟悉 Linux 系统操作...
+      已安装的软件可以在图形界面左下角开始菜单中找到
     commands:
       - type: "commands"
+        name: 办公软件 OnlyOffice
+        description: |
+          如果你不执着于使用 WPS，那么 OnlyOffice 是个不错的替代。
+          OnlyOffice 有安卓版本
+        commands:
+          - type: "command"
+            name: 安装
+            command: >
+              wget https://download.onlyoffice.com/install/desktop/editors/linux/onlyoffice-desktopeditors_arm64.deb -O /tmp/office.deb &&
+              sudo apt update &&
+              sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+              -o Dpkg::Options::="--force-confdef"
+              -o Dpkg::Options::="--force-confold"
+              install patchelf /tmp/office.deb;
+              patchelf --clear-execstack /opt/onlyoffice/desktopeditors/libQt5Gui.so.5;
+              rm /tmp/office.deb
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y onlyoffice-desktopeditors
+
+      - type: "commands"
         name: 图形处理软件 Krita
-        description: 虽然其实是绘画软件！
+        description: |
+          虽然其实是绘画软件！
+          强烈建议关闭 Krita 软件内的图形加速，这样会流畅很多，搭配 Termux:X11 完全可以画画。
+          Krita 有安卓版本
         commands:
           - type: "command"
             name: 安装
@@ -160,8 +224,25 @@ quick_commands:
             command: sudo apt autoremove --purge -y octave
 
       - type: "commands"
+        name: 视频剪辑软件 Kdenlive
+        commands:
+          - type: "command"
+            name: 安装
+            command: >
+              sudo apt update &&
+              sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+              -o Dpkg::Options::="--force-confdef"
+              -o Dpkg::Options::="--force-confold"
+              install kdenlive
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y kdenlive
+
+      - type: "commands"
         name: Chromium 浏览器
-        description: 安装后，通过 Chromium No Sandbox 来打开浏览器。
+        description: |
+          安装后，通过 Chromium No Sandbox 来打开浏览器。
+          目前一个已知问题是 Chromium 无法登录谷歌账号，原因不明。
         commands:
           - type: "command"
             name: 安装
@@ -183,7 +264,7 @@ quick_commands:
         description: 安装后，通过 Code No Sandbox 来打开 VS Code。
         commands:
           - type: "command"
-            name: 安装
+            name: "安装"
             command: >
               curl -L -o /tmp/vscode.deb 'https://aka.ms/linux-arm64-deb' &&
               sudo apt update &&
@@ -196,23 +277,173 @@ quick_commands:
               sed -i 's#Exec=/usr/share/code/code %F#Exec=/usr/share/code/code --no-sandbox %F#g' /usr/share/applications/code-no-sandbox.desktop;
               rm /tmp/vscode.deb
           - type: "command"
-            name: 卸载
+            name: "卸载"
             command: sudo apt autoremove --purge -y code && sudo rm -f /usr/share/applications/code-no-sandbox.desktop
+
+      - type: "commands"
+        name: 星火应用商店
+        description: |
+          注意小小容器的linux环境和正常的linux电脑不同，许多应用不经过修补无法正常使用。所以很容易出现星火应用商店中下载安装的应用无法安装或使用的情况。
+          建议只有当你确定某个应用可以使用时再安装它
+        commands:
+          - type: "command"
+            name: 安装
+            command: >
+              wget $(curl -s https://gitee.com/api/v5/repos/spark-store-project/spark-store/releases/latest | grep -o '"browser_download_url":[^}]*arm64\.deb[^}]*' | sed 's/.*"browser_download_url":"\([^"]*\)".*/\1/') -O /tmp/spark.deb &&
+              sudo apt update &&
+              sudo -E env DEBIAN_FRONTEND=noninteractive apt -y
+              -o Dpkg::Options::="--force-confdef"
+              -o Dpkg::Options::="--force-confold"
+              install /tmp/spark.deb -y; rm /tmp/spark.deb
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y spark-store
+
+      - type: "commands"
+        name: JetBrains 系列软件
+        description: |
+          就是 PyCharm、Clion、Intellij IDEA 等等那些！
+          只要改命令内的名称和版本就可以切换软件和版本。
+          所有支持的名称和版本可以到 https://github.com/JonasGroeger/jetbrains-ppa/tree/master/deb 查看。
+          另外，JetBrains IDE 使用时可能比较卡顿。
+          *代码尽量放在小小容器内部而不是安卓侧存储空间。这是因为存储空间的文件没有可执行权限，可能影响代码执行。
+        commands:
+          - type: "commands"
+            name: PyCharm 2026.1.2
+            commands:
+              - type: "command"
+                name: "安装"
+                command: "bash /opt/tiny/extra/install-jetbrains.sh pycharm 2026.1.2"
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y pycharm"
+          - type: "commands"
+            name: CLion 2026.1.3
+            commands:
+              - type: "command"
+                name: "安装"
+                command: "bash /opt/tiny/extra/install-jetbrains.sh clion 2026.1.3"
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y clion"
+          - type: "commands"
+            name: GoLand 2026.1.3
+            commands:
+              - type: "command"
+                name: "安装"
+                command: "bash /opt/tiny/extra/install-jetbrains.sh goland 2026.1.3"
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y goland"
+          - type: "commands"
+            name: Intellij IDEA 2026.1.3
+            commands:
+              - type: "command"
+                name: "安装"
+                command: "bash /opt/tiny/extra/install-jetbrains.sh intellij-idea 2026.1.3"
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y intellij-idea"
 
       - type: "commands"
         name: 常用国产软件
         description: 安装或卸载常用的国产软件。
         commands:
           - type: "commands"
+            name: WPS Office
+            commands:
+              - type: "command"
+                name: "安装"
+                description: 如果安装失败，可以通过星火应用商店安装。
+                command: |
+                  wget https://mirrors.sdu.edu.cn/spark-store/arm64-store/office/wps-office/wps-office_11.1.0.11720-fix4_arm64.deb -O /tmp/wps.deb && sudo apt update && sudo apt install -y /tmp/wps.deb libxslt1.1; rm /tmp/wps.deb
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y wps-office"
+
+          - type: "commands"
             name: QQ
             commands:
               - type: "command"
-                name: 安装
+                name: "安装"
                 command: |
                   wget $(curl -s https://cdn-go.cn/qq-web/im.qq.com_new/latest/rainbow/linuxConfig.js | grep -oP '"armDownloadUrl":{[^}]*"deb":"\K[^"]+') -O /tmp/qq.deb && sudo apt update && sudo apt install -y /tmp/qq.deb && sed -i 's#Exec=/opt/QQ/qq %U#Exec=/opt/QQ/qq --no-sandbox %U#g' /usr/share/applications/qq.desktop; rm /tmp/qq.deb
               - type: "command"
-                name: 卸载
-                command: sudo apt autoremove --purge -y linuxqq
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y linuxqq"
+
+          - type: "commands"
+            name: 微信
+            commands:
+              - type: "command"
+                name: "安装"
+                command: "wget https://dldir1v6.qq.com/weixin/Universal/Linux/WeChatLinux_arm64.deb -O /tmp/wechat.deb && sudo apt update && sudo apt install -y /tmp/wechat.deb; rm /tmp/wechat.deb"
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y wechat"
+
+          - type: "commands"
+            name: 钉钉
+            commands:
+              - type: "command"
+                name: "安装"
+                command: |
+                  wget $(curl -sw %{redirect_url} https://www.dingtalk.com/win/d/qd=linux_arm64) -O /tmp/dingtalk.deb && sudo apt update && sudo apt install -y /tmp/dingtalk.deb libglut3.12 libglu1-mesa && sed -i 's#\./com.alibabainc.dingtalk#\./com.alibabainc.dingtalk --no-sandbox#g' /opt/apps/com.alibabainc.dingtalk/files/Elevator.sh; rm /tmp/dingtalk.deb
+              - type: "command"
+                name: "卸载"
+                command: "sudo apt autoremove --purge -y com.alibabainc.dingtalk"
+
+  - type: "commands"
+    name: 运行 Windows 软件
+    description: |
+      安装 Hangover Wine，通过 Hangover 运行 exe。
+      运行慢、运行失败等等都是十分正常的。
+      *Windows 软件尽量放在小小容器内部而不是安卓侧存储空间。这是因为存储空间的文件没有可执行权限，可能影响软件运行。
+    commands:
+      - type: "commands"
+        name: 安装和卸载
+        description: |
+          如果安装失败，你也可以亲自前往 https://github.com/AndreRH/hangover/releases 下载最新的 Debian 13 版本。
+        commands:
+          - type: "command"
+            name: 安装 Hangover 最新版
+            description: 安装前，请先在选项配置-杂项中启用 Hangover 配置并重启容器！
+            command: bash /opt/tiny/extra/install-hangover.sh
+          - type: "command"
+            name: 卸载
+            command: sudo apt autoremove --purge -y hangover*
+          - type: "command"
+            name: 抹除 Wine 数据
+            command: rm -rf ~/.wine
+
+      - type: "commands"
+        name: Wine 实用命令
+        description: 必须安装并启用了 Hangover 才能使用的命令。
+        commands:
+          - type: "command"
+            name: "Wine配置"
+            command: "winecfg &"
+          - type: "command"
+            name: "开始菜单文件夹"
+            command: "wine explorer \"C:\\\\ProgramData\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\" &"
+          - type: "command"
+            name: "我的电脑"
+            command: "wine explorer &"
+          - type: "command"
+            name: "记事本"
+            command: "notepad &"
+          - type: "command"
+            name: "注册表"
+            command: "regedit &"
+          - type: "command"
+            name: "控制面板"
+            command: "wine control &"
+          - type: "command"
+            name: "任务管理器"
+            command: "wine taskmgr &"
+          - type: "command"
+            name: "强制关闭Wine"
+            command: "wineserver -k && wineserver -p"
 
 # 选项
 options:
@@ -221,6 +452,28 @@ options:
     description: 一键开启高清模式，显示更清晰的同时速度会变慢。
     env: ["GDK_SCALE=2", "QT_FONT_DPI=192"]
     enabled: false
+
+  - type: "options"
+    name: 杂项
+    options:
+      - type: "option"
+        name: fcitx 输入法
+        description: |
+          启用以确保容器能识别已安装的 fcitx 输入法。
+          按 Ctrl + 空格 来切换输入法。
+        env:
+          - SDL_IM_MODULE=fcitx
+          - XMODIFIERS=@im=fcitx
+          - QT_IM_MODULE=fcitx
+          - GTK_IM_MODULE=fcitx
+        enabled: false
+
+      - type: "option"
+        name: Hangover 配置
+        description: 启用以确保 Hangover 正常工作。
+        ld_preload:
+          - /opt/tiny/extra/libmmap_shim.so
+        enabled: false
 
   - type: "options"
     name: 图形加速
@@ -238,3 +491,19 @@ options:
           --socket-path=$CACHE_DIR/tmp/.virgl_test &"
         post_end_host_command: /system/bin/su -c "pkill virgl_test_server"
         enabled: false
+
+      - type: "options"
+        name: Adreno GPU 加速
+        description: >
+          只有部分 Adreno GPU 可使用的加速选项。
+          以下选项最多选一个，其中"启用DRI3"只有在使用 Termux:X11 显示图形界面时才可用。
+        options:
+          - type: "option"
+            name: Turnip + Zink 加速
+            env: ["MESA_LOADER_DRIVER_OVERRIDE=zink", "VK_ICD_FILENAMES=/opt/tiny/extra/freedreno_icd.aarch64.json", "TU_DEBUG=noconform", "MESA_VK_WSI_DEBUG=sw"]
+            enabled: false
+          - type: "option"
+            name: 启用 DRI3 的 Turnip + Zink 加速
+            description: 你只应该在使用 Termux:X11 时使用它。
+            env: ["MESA_LOADER_DRIVER_OVERRIDE=zink", "VK_ICD_FILENAMES=/opt/tiny/extra/freedreno_icd.aarch64.json", "TU_DEBUG=noconform"]
+            enabled: false
