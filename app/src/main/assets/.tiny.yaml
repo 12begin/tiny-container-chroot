@@ -473,7 +473,6 @@ options:
         description: 挂载安卓系统字体位置和容器预置字体位置。
         mount_bind:
           - "/system/fonts:usr/share/fonts/android"
-          - "/opt/tiny/font:usr/share/fonts/tiny"
         enabled: true
 
       - type: "option"
@@ -484,7 +483,7 @@ options:
           - "/opt/tiny/pipewire/91-tiny-microphone.conf:etc/pipewire/pipewire.conf.d/91-tiny-microphone.conf"
           - "/opt/tiny/pipewire/libpipewire-module-tiny-audio.so:usr/lib/aarch64-linux-gnu/pipewire-0.3/libpipewire-module-tiny-audio.so"
           - "/opt/tiny/pipewire/libpipewire-module-tiny-microphone.so:usr/lib/aarch64-linux-gnu/pipewire-0.3/libpipewire-module-tiny-microphone.so"
-        enabled: true
+        enabled: false
 
       - type: "option"
         name: fcitx 输入法

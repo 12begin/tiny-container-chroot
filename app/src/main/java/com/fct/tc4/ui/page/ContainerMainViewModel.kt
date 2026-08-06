@@ -536,7 +536,8 @@ fi
                     if (parts.size == 2 && containerDir.isNotEmpty()) {
                         val src = parts[0]
                         val dst = "$containerDir/${parts[1]}"
-                        mountBind.add("mkdir -p \"$dst\" 2>/dev/null && mount -o bind \"$src\" \"$dst\" 2>/dev/null")
+                        // mkdir -p 创建父目录，不是文件本身
+                        mountBind.add("mkdir -p \$(dirname \"$dst\") 2>/dev/null && mount -o bind \"$src\" \"$dst\" 2>/dev/null")
                     }
                 }
             }
