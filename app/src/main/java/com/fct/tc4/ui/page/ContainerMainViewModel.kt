@@ -147,6 +147,9 @@ class ContainerMainViewModel(
                 Global.sendCommand("echo \">>> stop\"")
                 Global.sendCommand("echo \"正在停止 VNC 服务...\"")
                 Global.sendCommand("$suPath -c \"fuser -k 5901/tcp 2>/dev/null && echo 'VNC 已停止' || echo 'VNC 未运行'\"")
+                Global.sendCommand("echo \"正在停止容器进程...\"")
+                // 先杀掉所有占用容器目录的进程，确保挂载点可以被卸载
+                Global.sendCommand("$suPath -c \"fuser -km \"$containerDir\" 2>/dev/null; echo '容器进程已停止'\"")
                 Global.sendCommand("echo \"正在卸载文件系统...\"")
                 // 注意：不能用 lsof 搜索容器目录，会误杀原项目的进程
                 // umount -l 会立即断开挂载点，即使进程还在使用
@@ -224,9 +227,14 @@ class ContainerMainViewModel(
             val cacheDir = app.cacheDir.absolutePath
             val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
 
-            // 构建一个完整的脚本：mount → chroot
+            // 构建一个完整的脚本：清理残留 → mount → 挂载选项 → chroot → 切换用户
             // 模仿 linuxdeploy 的 mount_part root 方式
             val bootScript = """
+# 0. 清理之前残留的挂载点，避免反复开关导致挂载点堆积
+mount | grep "$containerDir" | awk '{print \$3}' | sort -r | while read p; do
+    [ -n "$p" ] && umount -l "$p" 2>/dev/null
+done
+
 # 1. remount 容器目录为 exec,suid,dev
 mount -o bind "$containerDir" "$containerDir" 2>/dev/null
 mount -o remount,exec,suid,dev "$containerDir" 2>/dev/null
@@ -248,13 +256,20 @@ mkdir -p "$containerDir/tmp" "$containerDir/run" 2>/dev/null
 mount -o bind "$cacheDir/tmp" "$containerDir/tmp" 2>/dev/null
 mount -o bind "$cacheDir/run" "$containerDir/run" 2>/dev/null
 
-# 4. chroot 进入容器（Debian 上 bash 在 /usr/bin/bash，/bin 是 symlink）
-if [ -x "$containerDir/bin/bash" ]; then
-    exec chroot "$containerDir" /bin/bash --login
-elif [ -x "$containerDir/usr/bin/bash" ]; then
-    exec chroot "$containerDir" /usr/bin/bash --login
+# 4. 应用选项中的绑定挂载（mount_bind）
+${merged.mountBind.joinToString("\n") { cmd -> cmd }}
+
+# 5. 创建 /home/tiny 目录（如果不存在）
+mkdir -p "$containerDir/home/tiny" 2>/dev/null
+
+# 6. chroot 进入容器，自动切换到 tiny 用户
+# 先以 root 进入，然后用 su 切换到 tiny 用户
+if [ -x "$containerDir/bin/su" ]; then
+    exec chroot "$containerDir" /bin/su - tiny -c "exec /bin/bash --login"
+elif [ -x "$containerDir/usr/bin/su" ]; then
+    exec chroot "$containerDir" /usr/bin/su - tiny -c "exec /bin/bash --login"
 else
-    exec chroot "$containerDir" /bin/sh --login
+    exec chroot "$containerDir" /bin/bash --login
 fi
 """.trimIndent()
 
@@ -470,20 +485,22 @@ fi
     @Suppress("UNCHECKED_CAST")
     private fun collectEnabledOptions(): MergedOptions {
         val rawOptions = config["options"] as? List<Map<String, Any>> ?: emptyList()
-        return collectOptionsRecursive(rawOptions)
+        val app = getApplication<Application>()
+        val containerDir = "${app.dataDir.absolutePath}/$code"
+        return collectOptionsRecursive(rawOptions, containerDir)
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun collectOptionsRecursive(options: List<Map<String, Any>>): MergedOptions {
+    private fun collectOptionsRecursive(options: List<Map<String, Any>>, containerDir: String): MergedOptions {
         val result = MergedOptions()
         for (option in options) {
             val type = option["type"] as? String ?: continue
             if (type == "options") {
                 val subs = option["options"] as? List<Map<String, Any>> ?: emptyList()
-                result += collectOptionsRecursive(subs)
+                result += collectOptionsRecursive(subs, containerDir)
             } else if (type == "option") {
                 if (option["enabled"] as? Boolean == true) {
-                    result += option
+                    result.merge(option, containerDir)
                 }
             }
         }
@@ -498,10 +515,11 @@ fi
         val args: MutableList<String> = mutableListOf(),
         val preStartHostCommands: MutableList<String> = mutableListOf(),
         val postStartContainerCommands: MutableList<String> = mutableListOf(),
-        val postEndHostCommands: MutableList<String> = mutableListOf()
+        val postEndHostCommands: MutableList<String> = mutableListOf(),
+        val mountBind: MutableList<String> = mutableListOf()
     ) {
         @Suppress("UNCHECKED_CAST")
-        operator fun plusAssign(option: Map<String, Any>) {
+        fun merge(option: Map<String, Any>, containerDir: String = "") {
             (option["env"] as? List<String>)?.let { env.addAll(it) }
             (option["path"] as? List<String>)?.let { path.addAll(it) }
             (option["ld_library_path"] as? List<String>)?.let { ldLibraryPath.addAll(it) }
@@ -510,6 +528,17 @@ fi
             (option["pre_start_host_command"] as? String)?.let { preStartHostCommands.add(it) }
             (option["post_start_container_command"] as? String)?.let { postStartContainerCommands.add(it) }
             (option["post_end_host_command"] as? String)?.let { postEndHostCommands.add(it) }
+            // 解析 mount_bind 字段，格式："源路径:目标路径"
+            (option["mount_bind"] as? List<String>)?.let { binds ->
+                for (b in binds) {
+                    val parts = b.split(":", limit = 2)
+                    if (parts.size == 2 && containerDir.isNotEmpty()) {
+                        val src = parts[0]
+                        val dst = "$containerDir/${parts[1]}"
+                        mountBind.add("mkdir -p \"$dst\" 2>/dev/null && mount -o bind \"$src\" \"$dst\" 2>/dev/null")
+                    }
+                }
+            }
         }
 
         operator fun plusAssign(other: MergedOptions) {
@@ -521,6 +550,7 @@ fi
             preStartHostCommands.addAll(other.preStartHostCommands)
             postStartContainerCommands.addAll(other.postStartContainerCommands)
             postEndHostCommands.addAll(other.postEndHostCommands)
+            mountBind.addAll(other.mountBind)
         }
     }
 

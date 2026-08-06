@@ -457,6 +457,36 @@ options:
     name: 杂项
     options:
       - type: "option"
+        name: 常用文件夹挂载
+        description: 将安卓对应文件夹挂载到容器的主文件夹。
+        mount_bind:
+          - "/sdcard/Pictures:home/tiny/图片"
+          - "/sdcard/Music:home/tiny/音乐"
+          - "/sdcard/Movies:home/tiny/视频"
+          - "/sdcard/Download:home/tiny/下载"
+          - "/sdcard/DCIM:home/tiny/照片"
+          - "/sdcard/Documents:home/tiny/文档"
+        enabled: true
+
+      - type: "option"
+        name: 常用字体位置挂载
+        description: 挂载安卓系统字体位置和容器预置字体位置。
+        mount_bind:
+          - "/system/fonts:usr/share/fonts/android"
+          - "/opt/tiny/font:usr/share/fonts/tiny"
+        enabled: true
+
+      - type: "option"
+        name: 音频库挂载
+        description: 让容器内音频和麦克风工作的先决条件。如果完全不需要音频，可以关闭以节省性能。
+        mount_bind:
+          - "/opt/tiny/pipewire/90-tiny-audio.conf:etc/pipewire/pipewire.conf.d/90-tiny-audio.conf"
+          - "/opt/tiny/pipewire/91-tiny-microphone.conf:etc/pipewire/pipewire.conf.d/91-tiny-microphone.conf"
+          - "/opt/tiny/pipewire/libpipewire-module-tiny-audio.so:usr/lib/aarch64-linux-gnu/pipewire-0.3/libpipewire-module-tiny-audio.so"
+          - "/opt/tiny/pipewire/libpipewire-module-tiny-microphone.so:usr/lib/aarch64-linux-gnu/pipewire-0.3/libpipewire-module-tiny-microphone.so"
+        enabled: true
+
+      - type: "option"
         name: fcitx 输入法
         description: |
           启用以确保容器能识别已安装的 fcitx 输入法。

@@ -638,7 +638,19 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
 
         // DELETING_OLD
         val dir = File(app.dataDir, code)
-        if (dir.exists()) dir.deleteRecursively()
+        if (dir.exists()) {
+            // 先卸载残留挂载点，确保可以删除
+            try {
+                val suPath = Global.suPath
+                if (suPath.isNotEmpty()) {
+                    ChrootManager.umountAll(suPath, dir.absolutePath)
+                }
+            } catch (_: Exception) {}
+            // 重试删除（如果第一次失败）
+            if (!dir.deleteRecursively()) {
+                dir.deleteRecursively()
+            }
+        }
         updateCurrentStep(InstallStep.EXTRACTING_ROOTFS)
 
         // EXTRACTING_ROOTFS
@@ -767,7 +779,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/bin/bash\" \"$containerDir/bin/sh\" 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
-                        "chown 10337:10337 \"$containerDir/home/tiny\" 2>/dev/null")
+                        "chown 1000:1000 \"$containerDir/home/tiny\" 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/home/tiny\" 2>/dev/null")
                     // 验证
