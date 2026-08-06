@@ -10,15 +10,12 @@
 
 ### 为什么做 chroot？
 
-原作者[明确说过](https://github.com/Cateners/tiny_container)不会支持 chroot：
-
-> "我从没有开发使用 root 的应用的经验（而且感觉管理 root 会非常麻烦），所以我不会支持 chroot。"
-
-对大多数用户来说 proot 够用了。但设备都 root 了，chroot 跑得更快、能做更多事情，所以就有了这个项目。
+原版 Tiny Container 使用 proot 运行容器，对大多数用户来说够用了。  
+但如果设备已经 root，chroot 能提供更好的性能和更完整的 Linux 兼容性——所以就有了这个项目。
 
 ### 区别
 
-- 用 chroot 代替 proot。性能更好，能做到更多事情。
+- 用 chroot 代替 proot，性能更好，兼容性更强
 - 完整挂载文件系统（proc、sys、dev、dev/pts）
 - 首次启动自动检测 root 权限
 - **需要 root 权限**。没有 root？请用[原版](https://github.com/Cateners/tiny_container)。
@@ -58,7 +55,7 @@ apk 安装包见 [releases](https://github.com/12begin/tiny-container-chroot/rel
 
 克隆仓库后，在[原版 release](https://github.com/Cateners/tiny_container/releases) 页下载预编译库 jniLibs.zip 并解压到 app/src/main/jniLibs/arm64-v8a，然后就可以正常在 Android Studio 打开项目编译了。  
 如果要做到启动时自动安装容器的效果，可把容器重命名为 rootfs.tar.zst 并放到 app/src/main/assets。  
-容器信息见 [images 仓库](https://github.com/tiny-computer/images)。
+容器信息见 [chroot-images 仓库](https://github.com/12begin/tiny-container-chroot-images)。
 
 ## 致谢
 

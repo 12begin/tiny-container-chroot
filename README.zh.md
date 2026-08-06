@@ -10,15 +10,12 @@ The original uses proot and works without root. This one uses chroot and require
 
 ### Why chroot?
 
-The original author [stated clearly](https://github.com/Cateners/tiny_container) that they won't support chroot:
-
-> "I have no experience developing apps that use root (and managing root seems like a huge hassle), so I won't be supporting chroot."
-
-Fair point. For most users proot works fine. But if your device is already rooted, chroot runs faster and can do more. So here we are.
+The original Tiny Container uses proot to run containers, which works well for most users.  
+But if your device is already rooted, chroot offers better performance and more complete Linux compatibility — so here we are.
 
 ### What's different
 
-- chroot instead of proot. Better performance, can do more.
+- chroot instead of proot. Better performance, better compatibility.
 - Full filesystem mount (proc, sys, dev, dev/pts)
 - Root detection on first launch
 - Root permission is **required**. No root? Use the [original version](https://github.com/Cateners/tiny_container).
@@ -58,7 +55,7 @@ APKs are available on the [releases](https://github.com/12begin/tiny-container-c
 
 After cloning the repository, download the prebuilt library jniLibs.zip from the [original releases](https://github.com/Cateners/tiny_container/releases) page and extract it to app/src/main/jniLibs/arm64-v8a. Then you can open and build the project normally in Android Studio.  
 For automatic container installation on first launch, rename your container to rootfs.tar.zst and place it in app/src/main/assets.  
-For container information, check out the [images repo](https://github.com/tiny-computer/images).
+For container information, check out the [chroot-images repo](https://github.com/12begin/tiny-container-chroot-images).
 
 ## Acknowledgments
 
