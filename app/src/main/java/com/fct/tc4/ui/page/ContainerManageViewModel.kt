@@ -373,9 +373,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 if (cacheFile.length() == 0L) {
                     throw IllegalStateException("文件复制后为空，请检查文件是否有效")
                 }
-                // 直接安装，使用应用内置的默认配置
-                // 不依赖压缩包中的 .tiny.yaml 提取（避免管道命令失败）
-                // 安装后 ConfigManager.save 会保存配置，用户可在界面中编辑
+                // 先用默认配置安装
                 val code = "xfce"
                 performInstall(code, mapOf(
                     "code" to code,
@@ -384,6 +382,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     "chroot_boot_command" to "/bin/bash --login",
                     "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
                 ))
+                // 安装完成后，从容器目录读取 .tiny.yaml，如果存在则覆盖配置
+                val configFile = File(app.dataDir, "$code/.tiny.yaml")
+                if (configFile.exists()) {
+                    try {
+                        val containerConfig = Yaml().load<Map<String, Any>>(configFile.readText())
+                        if (containerConfig != null) {
+                            ConfigManager.save(code, containerConfig)
+                        }
+                    } catch (_: Exception) {}
+                }
                 _installState.value = InstallState.Completed(
                     launchAfterInstall = false,
                     code = code
