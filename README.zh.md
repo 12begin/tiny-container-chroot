@@ -15,10 +15,8 @@ But if your device is already rooted, chroot offers better performance and more 
 
 ### What's different
 
-- chroot instead of proot. Better performance, better compatibility.
-- Full filesystem mount (proc, sys, dev, dev/pts)
-- Root detection on first launch
-- Root permission is **required**. No root? Use the [original version](https://github.com/Cateners/tiny_container).
+- Uses chroot to run containers. **Root permission is required.**
+- No root? Use the [original version](https://github.com/Cateners/tiny_container).
 
 Everything else is the same as the original. See below.
 

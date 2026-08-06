@@ -15,10 +15,8 @@
 
 ### 区别
 
-- 用 chroot 代替 proot，性能更好，兼容性更强
-- 完整挂载文件系统（proc、sys、dev、dev/pts）
-- 首次启动自动检测 root 权限
-- **需要 root 权限**。没有 root？请用[原版](https://github.com/Cateners/tiny_container)。
+- 用 chroot 运行容器，**需要 root 权限**
+- 没有 root？请用[原版](https://github.com/Cateners/tiny_container)
 
 其他功能与原版一致。往下看。
 
