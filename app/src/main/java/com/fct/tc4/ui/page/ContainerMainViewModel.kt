@@ -231,8 +231,8 @@ class ContainerMainViewModel(
             // 模仿 linuxdeploy 的 mount_part root 方式
             val bootScript = """
 # 0. 清理之前残留的挂载点，避免反复开关导致挂载点堆积
-mount | grep "$containerDir" | awk '{print \$3}' | sort -r | while read p; do
-    [ -n "$p" ] && umount -l "$p" 2>/dev/null
+mount | grep "$containerDir" | awk '{print \$3}' | sort -r | while read mp; do
+    [ -n "$mp" ] && umount -l "$mp" 2>/dev/null
 done
 
 # 1. remount 容器目录为 exec,suid,dev

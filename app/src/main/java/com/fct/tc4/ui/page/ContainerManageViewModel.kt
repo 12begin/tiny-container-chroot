@@ -23,6 +23,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fct.tc4.R
 import com.fct.tc4.RootUtils
+import com.fct.tc4.ChrootManager
 import com.fct.tc4.ui.misc.ConfigManager
 import com.fct.tc4.ui.misc.Global
 import kotlinx.coroutines.Dispatchers
