@@ -263,11 +263,12 @@ ${merged.mountBind.joinToString("\n") { cmd -> cmd }}
 mkdir -p "$containerDir/home/tiny" 2>/dev/null
 
 # 6. chroot 进入容器，自动切换到 tiny 用户
-# 先以 root 进入，然后用 su 切换到 tiny 用户
+# 用 su tiny（不带 -）切换用户，不需要密码
+# su - tiny 会做完整登录，要求密码，但 tiny 密码为空会失败
 if [ -x "$containerDir/bin/su" ]; then
-    exec chroot "$containerDir" /bin/su - tiny -c "exec /bin/bash --login"
+    exec chroot "$containerDir" /bin/su tiny -c "exec /bin/bash --login"
 elif [ -x "$containerDir/usr/bin/su" ]; then
-    exec chroot "$containerDir" /usr/bin/su - tiny -c "exec /bin/bash --login"
+    exec chroot "$containerDir" /usr/bin/su tiny -c "exec /bin/bash --login"
 else
     exec chroot "$containerDir" /bin/bash --login
 fi
