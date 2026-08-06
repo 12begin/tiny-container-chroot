@@ -373,16 +373,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 if (cacheFile.length() == 0L) {
                     throw IllegalStateException("文件复制后为空，请检查文件是否有效")
                 }
-                // 先检测容器目录中是否有 .tiny.yaml（解压后由 rootfs 包提供）
-                // 没有配置文件则容器无法正常启动，拒绝安装
-                val code = "xfce"
-                performInstall(code, mapOf(
+                // 先尝试从 rootfs 包中提取 .tiny.yaml 配置
+                val configFromRootfs = extractConfigFromArchive()
+                val code = configFromRootfs?.get("code") as? String ?: "xfce"
+
+                // 用提取到的配置（或默认配置）执行安装
+                performInstall(code, configFromRootfs ?: mapOf(
                     "code" to code,
                     "name" to "XFCE Desktop",
                     "description" to "Imported Container",
                     "chroot_boot_command" to "/bin/bash --login",
                     "feature" to listOf(mapOf("type" to "audio", "enabled" to true))
                 ))
+
+                // 检查容器目录中是否有 .tiny.yaml（来自 rootfs 包解压）
                 val configFile = File(app.dataDir, "$code/.tiny.yaml")
                 if (!configFile.exists()) {
                     // 解压后没有配置文件，删除容器目录并报错
@@ -390,13 +394,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     cleanCacheFiles()
                     throw IllegalStateException("rootfs 包中缺少 .tiny.yaml 配置文件，无法安装")
                 }
-                // 读取容器内的配置并保存
-                try {
-                    val containerConfig = Yaml().load<Map<String, Any>>(configFile.readText())
-                    if (containerConfig != null) {
-                        ConfigManager.save(code, containerConfig)
-                    }
-                } catch (_: Exception) {}
+
+                // 重新加载容器列表（确保 UI 显示完整配置）
+                loadContainers()
                 _installState.value = InstallState.Completed(
                     launchAfterInstall = false,
                     code = code
@@ -407,6 +407,29 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     "导入失败: ${e.message}")
             }
         }
+    }
+
+    /** 从缓存 rootfs.tar.zst 中提取 .tiny.yaml 配置 */
+    private suspend fun extractConfigFromArchive(): Map<String, Any>? {
+        val app = getApplication<Application>()
+        val cacheDir = app.cacheDir.absolutePath
+        val rootfsFile = File(app.cacheDir, "rootfs.tar.zst")
+        if (!rootfsFile.exists()) return null
+
+        val suPath = Global.suPath
+        if (suPath.isNotEmpty()) {
+            val bDir = "${app.filesDir.absolutePath}/bootstrap/bin"
+            val bLib = "${app.filesDir.absolutePath}/bootstrap/lib"
+            RootUtils.executeWithSu(suPath,
+                "LD_LIBRARY_PATH=$bLib $bDir/zstd -d -c \"$cacheDir/rootfs.tar.zst\" 2>/dev/null | $bDir/tar -xf - -O .tiny.yaml 2>/dev/null > \"$cacheDir/.tiny.yaml\"")
+        }
+
+        val configFile = File(app.cacheDir, ".tiny.yaml")
+        if (!configFile.exists()) return null
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            Yaml().load<Map<String, Any>>(configFile.readText())
+        } catch (_: Exception) { null }
     }
 
     /** 从 assets 内置 rootfs.tar.zst 开始导入（用户手动点"安装内置容器"触发） */
@@ -791,9 +814,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         cleanCacheFiles()
 
         Global.installedContainers += code
-        val mergedConfig = rawConfig.toMutableMap()
-        mergedConfig["code"] = code
-        ConfigManager.save(code, mergedConfig)
+        // 如果容器目录中已经有 .tiny.yaml（来自 rootfs 包），保留它
+        // 否则用 rawConfig 创建默认配置
+        val configFile = File(app.dataDir, "$code/.tiny.yaml")
+        if (!configFile.exists()) {
+            val mergedConfig = rawConfig.toMutableMap()
+            mergedConfig["code"] = code
+            ConfigManager.save(code, mergedConfig)
+        }
 
         loadContainers()
     }

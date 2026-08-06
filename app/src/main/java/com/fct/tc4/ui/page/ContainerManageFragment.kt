@@ -363,7 +363,7 @@ class ContainerManageFragment : Fragment() {
                             }
                         }
                         is InstallState.Completed -> {
-                            (childFragmentManager.findFragmentByTag("install_progress") as? FakeProgressDialogFragment)?.dismiss()
+                            // FakeProgressDialogFragment 内部会自己关闭，这里不再手动 dismiss
                             if (state.launchAfterInstall) {
                                 mainViewModel.navigateTo(MainViewModel.Screen.ContainerMain(code = state.code))
                             } else {
@@ -373,7 +373,7 @@ class ContainerManageFragment : Fragment() {
                         }
                         is InstallState.Failed -> {
                             (childFragmentManager.findFragmentByTag("install_copy_progress") as? ProgressDialogFragment)?.dismiss()
-                            (childFragmentManager.findFragmentByTag("install_progress") as? FakeProgressDialogFragment)?.dismiss()
+                            // FakeProgressDialogFragment 内部会自己关闭
                             Snackbar.make(binding.root, state.message, Snackbar.LENGTH_INDEFINITE)
                                 .setAction(R.string.tc4_btn_ok) { viewModel.resetInstallState() }
                                 .show()

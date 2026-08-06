@@ -94,7 +94,7 @@ class FakeProgressDialogFragment : DialogFragment() {
                             }
                         }
                         is InstallState.Completed, is InstallState.Failed -> {
-                            dismiss()
+                            dismissAllowingStateLoss()
                         }
                         else -> {}
                     }
