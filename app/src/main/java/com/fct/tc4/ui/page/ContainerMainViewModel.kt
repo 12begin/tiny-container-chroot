@@ -228,10 +228,23 @@ class ContainerMainViewModel(
             // 构建一个完整的脚本：清理残留 → mount → 挂载选项 → chroot → 切换用户
             // 模仿 linuxdeploy 的 mount_part root 方式
             val bootScript = """
-# 0. 清理之前残留的挂载点，避免反复开关导致挂载点堆积
-# 排除容器目录自身（bind mount 自身），避免卸载后 chroot 失败
-mount | grep "$containerDir/" | awk '{print $3}' | sort -r | while read mp; do
-    [ -n "${'$'}mp" ] && umount -l "${'$'}mp" 2>/dev/null
+# 0. 彻底清理之前残留的挂载点和进程，避免反复开关导致挂载点堆积
+# 先杀掉残留的 chroot 进程（如果有），确保挂载点可以被卸载
+fuser -k "${containerDir}/proc" 2>/dev/null || true
+fuser -k "${containerDir}/dev" 2>/dev/null || true
+# 从 /proc/mounts 中查找所有容器相关的挂载点，逆序卸载
+cat /proc/mounts | grep "$containerDir" | awk '{print $2}' | sort -r | while read mp; do
+    if [ -n "${'$'}mp" ] && [ "${'$'}mp" != "$containerDir" ]; then
+        umount -l "${'$'}mp" 2>/dev/null
+        umount "${'$'}mp" 2>/dev/null
+    fi
+done
+# 重试一次，确保卸载干净
+sleep 0.2
+cat /proc/mounts | grep "$containerDir" | awk '{print $2}' | sort -r | while read mp; do
+    if [ -n "${'$'}mp" ] && [ "${'$'}mp" != "$containerDir" ]; then
+        umount -l "${'$'}mp" 2>/dev/null
+    fi
 done
 
 # 1. remount 容器目录为 exec,suid,dev

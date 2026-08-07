@@ -128,22 +128,26 @@ object ChrootManager {
 
         // 逆序卸载（先卸载最内层的挂载）
         for (target in targets.reversed()) {
-            var success = false
-            for (attempt in 1..3) {
+            // 用 umount -l（lazy unmount），立即断开挂载点
+            // 多次尝试，确保卸载干净
+            for (attempt in 1..5) {
                 try {
-                    val result = RootUtils.executeWithSu(suPath, "umount -l \"$target\" 2>/dev/null")
-                    if (result == null) {
-                        success = true
-                        break
-                    }
+                    RootUtils.executeWithSu(suPath, "umount -l \"$target\" 2>/dev/null")
+                    RootUtils.executeWithSu(suPath, "umount \"$target\" 2>/dev/null")
                 } catch (_: Exception) {}
                 Thread.sleep(200)
             }
-            if (success) {
-                Log.d(TAG, "已卸载: $target")
-            } else {
-                Log.w(TAG, "卸载失败（3次尝试）: $target")
-            }
+            Log.d(TAG, "已尝试卸载: $target")
+        }
+        // 最终确认：再次检查是否有残留挂载
+        val remaining = getMountedList(suPath, containerDir)
+        if (remaining.isNotEmpty()) {
+            Log.w(TAG, "仍有残留挂载点: ${remaining.size} 个")
+            // 用 su 强制清理 /proc/mounts 中容器相关的挂载
+            try {
+                RootUtils.executeWithSu(suPath,
+                    "cat /proc/mounts | grep '$containerDir' | awk '{print \$2}' | sort -r | while read mp; do umount -l \"\$mp\" 2>/dev/null; done")
+            } catch (_: Exception) {}
         }
     }
 
