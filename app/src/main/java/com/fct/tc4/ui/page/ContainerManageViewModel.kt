@@ -807,12 +807,14 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     // 方式三：用 chroot + busybox passwd -d（如果 busybox 可执行）
                     RootUtils.executeWithSu(suPath,
                         "chroot \"$containerDir\" /bin/busybox passwd -d tiny 2>/dev/null")
-                    // 修复 /bin/bash 和 /home/tiny 的权限，让 tiny 用户能正常登录
+                    // 修复关键文件权限，让 tiny 用户能正常登录
                     // 用 chroot 方式修复（宿主侧 chmod 可能不跟随 bin 符号链接）
                     RootUtils.executeWithSu(suPath,
-                        "chroot \"$containerDir\" /usr/bin/chmod 755 /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh 2>/dev/null")
+                        "chroot \"$containerDir\" /usr/bin/chmod 755 /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh /usr/bin/sudo 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
-                        "chroot \"$containerDir\" /usr/bin/chown root:root /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh 2>/dev/null")
+                        "chroot \"$containerDir\" /usr/bin/chmod 4755 /usr/bin/su 2>/dev/null")
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /usr/bin/chown root:root /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh /usr/bin/su /usr/bin/sudo 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
                         "chroot \"$containerDir\" /usr/bin/chown tiny:tiny /home/tiny 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
