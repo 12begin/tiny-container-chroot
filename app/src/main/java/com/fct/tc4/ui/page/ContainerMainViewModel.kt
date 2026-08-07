@@ -262,13 +262,14 @@ ${merged.mountBind.joinToString("\n") { cmd -> cmd }}
 mkdir -p "$containerDir/home/tiny" 2>/dev/null
 
 # 6. chroot 进入容器，自动切换到 tiny 用户
-# 用 su tiny（不带 -）切换用户，不需要密码
-# su - tiny 会做完整登录，要求密码，但 tiny 密码为空会失败
-if [ -x "$containerDir/bin/su" ]; then
-    exec chroot "$containerDir" /bin/su tiny -c "exec /bin/bash --login"
-elif [ -x "$containerDir/usr/bin/su" ]; then
-    exec chroot "$containerDir" /usr/bin/su tiny -c "exec /bin/bash --login"
+# 用 sudo -u tiny 切换用户（不需要 setuid，通过 sudoers 配置免密）
+# su 的 setuid 位在 Android /data 分区不生效，所以不能用 su 切换用户
+if [ -x "$containerDir/usr/bin/sudo" ]; then
+    exec chroot "$containerDir" /usr/bin/sudo -u tiny /bin/bash --login
+elif [ -x "$containerDir/bin/sudo" ]; then
+    exec chroot "$containerDir" /bin/sudo -u tiny /bin/bash --login
 else
+    # 如果没有 sudo，直接以 root 进入，但设置 HOME 为 tiny 用户
     exec chroot "$containerDir" /bin/bash --login
 fi
 """.trimIndent()
