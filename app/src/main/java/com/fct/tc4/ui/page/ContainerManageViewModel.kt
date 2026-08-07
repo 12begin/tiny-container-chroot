@@ -808,10 +808,13 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     RootUtils.executeWithSu(suPath,
                         "chroot \"$containerDir\" /bin/busybox passwd -d tiny 2>/dev/null")
                     // 修复 /bin/bash 和 /home/tiny 的权限，让 tiny 用户能正常登录
+                    // 用 chroot 方式修复（宿主侧 chmod 可能不跟随 bin 符号链接）
                     RootUtils.executeWithSu(suPath,
-                        "chmod 755 \"$containerDir/bin/bash\" \"$containerDir/bin/sh\" 2>/dev/null")
+                        "chroot \"$containerDir\" /usr/bin/chmod 755 /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
-                        "chown 1000:1000 \"$containerDir/home/tiny\" 2>/dev/null")
+                        "chroot \"$containerDir\" /usr/bin/chown root:root /bin/bash /usr/bin/bash /bin/sh /usr/bin/sh 2>/dev/null")
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /usr/bin/chown tiny:tiny /home/tiny 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
                         "chmod 755 \"$containerDir/home/tiny\" 2>/dev/null")
                     // 验证
