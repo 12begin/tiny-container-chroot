@@ -649,8 +649,22 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             } catch (_: Exception) {}
             // 重试删除（如果第一次失败）
             if (!dir.deleteRecursively()) {
-                dir.deleteRecursively()
+                // 等待 1 秒后重试
+                kotlinx.coroutines.delay(1000)
+                if (!dir.deleteRecursively()) {
+                    // 第二次失败，用 su 强制删除
+                    try {
+                        val suPath = Global.suPath
+                        if (suPath.isNotEmpty()) {
+                            RootUtils.executeWithSu(suPath, "rm -rf \"${dir.absolutePath}\" 2>/dev/null")
+                        }
+                    } catch (_: Exception) {}
+                }
             }
+        }
+        // 确保目录被删除
+        if (dir.exists()) {
+            appendLog("警告：旧容器目录未能完全删除，但继续安装")
         }
         updateCurrentStep(InstallStep.EXTRACTING_ROOTFS)
 
@@ -676,26 +690,29 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
         appendLog("applib 存在: ${File(appLibDir).exists()}")
         appendLog("applib 内容: ${File(appLibDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
 
-        // 先用 execShell 测试终端是否正常工作
-        var testOk = false
-        execShell(15_000) {
-            Global.sendCommand("echo 'shell_test_ok' && exit")
-        }
-        testOk = true
-        appendLog("终端测试: 正常")
-
-        // 先用 execShell 创建 bootstrap symlink，再解压
+        // 用 ProcessBuilder 直接创建 bootstrap symlink（不依赖终端 session，更可靠）
         appendLog("正在创建 bootstrap symlink...")
-        execShell(30_000) {
+        try {
             val fDir = app.filesDir.absolutePath
-            // 直接创建 symlink，不依赖 shouldResetBootstrap
-            Global.sendCommand("mkdir -p $fDir/bootstrap/bin $fDir/bootstrap/lib")
-            Global.sendCommand("ln -sf $fDir/applib/lib__bin__busybox__.so $fDir/bootstrap/bin/busybox")
-            Global.sendCommand("ln -sf $fDir/applib/lib__bin__busybox__.so $fDir/bootstrap/bin/sh")
-            Global.sendCommand("ln -sf $fDir/applib/lib__bin__tar__.so $fDir/bootstrap/bin/tar")
-            Global.sendCommand("ln -sf $fDir/applib/lib__bin__zstd__.so $fDir/bootstrap/bin/zstd")
-            Global.sendCommand("ln -sf $fDir/applib/lib__lib__libzstd.so.1.5.7__.so $fDir/bootstrap/lib/libzstd.so.1")
-            Global.sendCommand("exit")
+            val mkDirs = ProcessBuilder("mkdir", "-p", "$fDir/bootstrap/bin", "$fDir/bootstrap/lib").start()
+            mkDirs.waitFor()
+            val links = listOf(
+                "$fDir/bootstrap/bin/busybox" to "$fDir/applib/lib__bin__busybox__.so",
+                "$fDir/bootstrap/bin/sh" to "$fDir/applib/lib__bin__busybox__.so",
+                "$fDir/bootstrap/bin/tar" to "$fDir/applib/lib__bin__tar__.so",
+                "$fDir/bootstrap/bin/zstd" to "$fDir/applib/lib__bin__zstd__.so",
+                "$fDir/bootstrap/lib/libzstd.so.1" to "$fDir/applib/lib__lib__libzstd.so.1.5.7__.so"
+            )
+            for ((link, target) in links) {
+                try {
+                    val f = File(link)
+                    if (f.exists()) f.delete()
+                    Runtime.getRuntime().exec(arrayOf("ln", "-s", target, link)).waitFor()
+                } catch (_: Exception) {}
+            }
+            appendLog("bootstrap symlink 创建完成")
+        } catch (e: Exception) {
+            appendLog("创建 bootstrap symlink 失败: ${e.message}")
         }
         appendLog("创建后 bDir 内容: ${File(bDir).list()?.take(30)?.joinToString(", ") ?: "空"}")
         appendLog("创建后 bDir/tar 存在: ${File("$bDir/tar").exists()}")
@@ -713,19 +730,25 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             zstdPb.environment().putAll(mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"))
             zstdPb.redirectErrorStream(true)
             val zstdProc = zstdPb.start()
+            val zstdDone = zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
             val zstdOut = zstdProc.inputStream.bufferedReader().readText()
-            zstdProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
             appendLog("zstd 完成, 输出: $zstdOut")
+            if (!zstdDone || zstdProc.exitValue() != 0) {
+                throw RuntimeException("zstd 解压失败，退出码: ${zstdProc.exitValue()}")
+            }
 
             appendLog("步骤2: tar 提取...")
-            val tarCmd = arrayOf("$bDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir)
+            val tarCmd = arrayOf("$bDir/tar", "-xf", "$cacheDir/rootfs.tar", "-C", containerDir, "--overwrite")
             val tarPb = ProcessBuilder(*tarCmd)
             tarPb.environment().putAll(mapOf("LD_LIBRARY_PATH" to "${app.filesDir.absolutePath}/bootstrap/lib"))
             tarPb.redirectErrorStream(true)
             val tarProc = tarPb.start()
+            val tarDone = tarProc.waitFor(10, java.util.concurrent.TimeUnit.MINUTES)
             val tarOut = tarProc.inputStream.bufferedReader().readText()
-            tarProc.waitFor(5, java.util.concurrent.TimeUnit.MINUTES)
             appendLog("tar 完成, 输出: $tarOut")
+            if (!tarDone || tarProc.exitValue() != 0) {
+                throw RuntimeException("tar 解压失败，退出码: ${tarProc.exitValue()}")
+            }
 
             // 清理
             File("$cacheDir/rootfs.tar.zst").delete()
