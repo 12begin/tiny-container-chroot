@@ -261,7 +261,11 @@ ${merged.mountBind.joinToString("\n") { cmd -> cmd }}
 # 5. 创建 /home/tiny 目录（如果不存在）
 mkdir -p "$containerDir/home/tiny" 2>/dev/null
 
-# 6. chroot 进入容器，自动切换到 tiny 用户
+# 6. 修复 sudoers 权限（如果打包时没修好，这里修，否则 sudo 无法工作）
+chroot "$containerDir" /usr/bin/chown root:root /etc/sudo.conf /etc/sudoers /etc/sudoers.d 2>/dev/null
+chroot "$containerDir" /usr/bin/chmod 440 /etc/sudoers /etc/sudoers.d 2>/dev/null
+
+# 7. chroot 进入容器，自动切换到 tiny 用户
 # 用 sudo -u tiny 切换用户（不需要 setuid，通过 sudoers 配置免密）
 # su 的 setuid 位在 Android /data 分区不生效，所以不能用 su 切换用户
 if [ -x "$containerDir/usr/bin/sudo" ]; then

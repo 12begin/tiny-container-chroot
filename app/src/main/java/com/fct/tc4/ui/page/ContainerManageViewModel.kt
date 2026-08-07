@@ -770,14 +770,20 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             // 原项目的 rootfs 是在 proot 的 uid 映射下打包的，
             // 文件所有者可能是宿主机的 uid（如 10337），chroot 下 uid 不映射，
             // 导致 sudo 等需要 root 所有权的文件报错
+            // 必须用 chroot 方式执行 chown，因为宿主侧 chown 0:0 可能不生效
             try {
                 appendLog("修复文件所有者...")
                 val suPath = Global.suPath
                 if (suPath.isNotEmpty()) {
+                    // 方式一：用 chroot 进入容器后执行 chown（最可靠）
+                    // 用 /usr/bin/chown 和 /usr/bin/chmod，避免 bin 符号链接问题
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /usr/bin/chown root:root /etc/sudo.conf /etc/sudoers 2>/dev/null")
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /usr/bin/chmod 440 /etc/sudoers 2>/dev/null")
+                    // 方式二：如果 chroot 方式失败，用宿主侧直接改
                     RootUtils.executeWithSu(suPath,
                         "chown -R 0:0 \"$containerDir/etc/sudo.conf\" \"$containerDir/etc/sudoers\" \"$containerDir/etc/sudoers.d\" 2>/dev/null")
-                    RootUtils.executeWithSu(suPath,
-                        "chmod 440 \"$containerDir/etc/sudoers\" 2>/dev/null")
                     appendLog("文件所有者修复完成")
                 }
             } catch (e: Exception) {
