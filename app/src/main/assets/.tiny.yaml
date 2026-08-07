@@ -9,7 +9,7 @@ description: "最经典的容器，包含 Windows 风格主题和开箱即用的
 # 图片预览。只能是图片地址。
 preview: "/home/tiny/.local/share/backgrounds/Fluent-building-day.png"
 # 介绍你的容器的网页。可以缺失。
-webpage: "https://www.github.com/Cateners/tiny_computer"
+# webpage: "https://www.github.com/Cateners/tiny_computer"
 
 # 小小容器提供若干功能，可以按需使用。
 feature:

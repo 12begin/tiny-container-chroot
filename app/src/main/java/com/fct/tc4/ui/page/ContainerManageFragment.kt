@@ -333,33 +333,23 @@ class ContainerManageFragment : Fragment() {
                                 mainViewModel.clearLog()
                                 mainViewModel.appendLog(state.log)
                             }
-                            if (state.webpage != null) {
-                                // 有网页 → 跳转到 ContainerInstallFragment 展示安装进度
-                                mainViewModel.navigateTo(
-                                    MainViewModel.Screen.ContainerInstall(
-                                        code = state.code,
-                                        webpage = state.webpage
-                                    )
-                                )
+                            // 不再用 webpage 跳转 ContainerInstallFragment，统一用假进度对话框
+                            val stepText = when (state.currentStep) {
+                                InstallStep.DELETING_OLD -> getString(R.string.tc4_import_deleting_old_title)
+                                InstallStep.EXTRACTING_ROOTFS -> getString(R.string.tc4_import_installing_title)
+                                InstallStep.CLEANING_CACHE -> getString(R.string.tc4_import_cleaning_title)
+                            }
+                            val tag = "install_progress"
+                            var dialog = childFragmentManager.findFragmentByTag(tag) as? FakeProgressDialogFragment
+                            if (dialog == null) {
+                                dialog = FakeProgressDialogFragment
+                                    .newBuilder(childFragmentManager)
+                                    .startTime(state.startTimeMillis)
+                                    .containerSizeBytes(state.containerSizeBytes)
+                                    .initialTitle(stepText)
+                                    .show(tag)
                             } else {
-                                // 无网页 → 用假进度对话框
-                                val stepText = when (state.currentStep) {
-                                    InstallStep.DELETING_OLD -> getString(R.string.tc4_import_deleting_old_title)
-                                    InstallStep.EXTRACTING_ROOTFS -> getString(R.string.tc4_import_installing_title)
-                                    InstallStep.CLEANING_CACHE -> getString(R.string.tc4_import_cleaning_title)
-                                }
-                                val tag = "install_progress"
-                                var dialog = childFragmentManager.findFragmentByTag(tag) as? FakeProgressDialogFragment
-                                if (dialog == null) {
-                                    dialog = FakeProgressDialogFragment
-                                        .newBuilder(childFragmentManager)
-                                        .startTime(state.startTimeMillis)
-                                        .containerSizeBytes(state.containerSizeBytes)
-                                        .initialTitle(stepText)
-                                        .show(tag)
-                                } else {
-                                    dialog.updateTitle(stepText)
-                                }
+                                dialog.updateTitle(stepText)
                             }
                         }
                         is InstallState.Completed -> {

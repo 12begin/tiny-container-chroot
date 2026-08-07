@@ -261,6 +261,21 @@ ${merged.mountBind.joinToString("\n") { cmd -> cmd }}
 # 5. 创建 /home/tiny 目录（如果不存在）
 mkdir -p "$containerDir/home/tiny" 2>/dev/null
 
+# 5.5 修复 bin 符号链接（如果打包时丢失了 bin -> usr/bin）
+if [ ! -L "$containerDir/bin" ] && [ -d "$containerDir/usr/bin" ]; then
+    rm -rf "$containerDir/bin" 2>/dev/null
+    ln -s usr/bin "$containerDir/bin" 2>/dev/null
+fi
+# 修复 lib 和 sbin 符号链接
+if [ ! -L "$containerDir/lib" ] && [ -d "$containerDir/usr/lib" ]; then
+    rm -rf "$containerDir/lib" 2>/dev/null
+    ln -s usr/lib "$containerDir/lib" 2>/dev/null
+fi
+if [ ! -L "$containerDir/sbin" ] && [ -d "$containerDir/usr/sbin" ]; then
+    rm -rf "$containerDir/sbin" 2>/dev/null
+    ln -s usr/sbin "$containerDir/sbin" 2>/dev/null
+fi
+
 # 6. 修复 sudoers 权限（如果打包时没修好，这里修，否则 sudo 无法工作）
 chroot "$containerDir" /usr/bin/chown root:root /etc/sudo.conf /etc/sudoers /etc/sudoers.d 2>/dev/null
 chroot "$containerDir" /usr/bin/chmod 440 /etc/sudoers /etc/sudoers.d 2>/dev/null

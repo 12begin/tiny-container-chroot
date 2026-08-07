@@ -514,7 +514,7 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 Global.isFirstLaunchDone = true
 
                 _installState.value = InstallState.Completed(
-                    launchAfterInstall = false,  // 不自动启动，让用户看到安装结果
+                    launchAfterInstall = true,  // 安装完成后跳转到容器管理界面
                     code = code
                 )
             } catch (e: Exception) {
