@@ -746,7 +746,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             val tarDone = tarProc.waitFor(10, java.util.concurrent.TimeUnit.MINUTES)
             val tarOut = tarProc.inputStream.bufferedReader().readText()
             appendLog("tar 完成, 输出: $tarOut")
-            if (!tarDone || tarProc.exitValue() != 0) {
+            // busybox tar 退出码 2 表示有硬链接失败等警告，但文件已解压
+            // 只有退出码 >= 3 才是真正的错误
+            if (!tarDone || tarProc.exitValue() >= 3) {
                 throw RuntimeException("tar 解压失败，退出码: ${tarProc.exitValue()}")
             }
 
