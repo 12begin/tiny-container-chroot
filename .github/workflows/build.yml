@@ -84,7 +84,7 @@ jobs:
             xfce-en) FILE="xfce-en-20260628-072838.tar.zst" ;;
             gxde-zh) FILE="gxde-zh-20260626-110317.tar.zst" ;;
             gxde-en) FILE="gxde-en-20260626-110344.tar.zst" ;;
-            test) URL="https://github.com/12begin/tiny-container-chroot-images/releases/download/v1%EF%BC%8Dtest/tiny-chroot-xfce-updated.tar.zst" ;;
+            test) URL="https://github.com/12begin/tiny-container-chroot-images/releases/download/v1%EF%BC%8Dtest/tiny-chroot-xfce-final.tar.zst" ;;
           esac
           if [ "${{ matrix.rootfs }}" = "test" ]; then
             curl -sL -o app/src/main/assets/rootfs.tar.zst "$URL"
