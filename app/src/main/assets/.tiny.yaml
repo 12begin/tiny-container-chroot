@@ -55,7 +55,7 @@ feature:
       -SendPrimary=off -SetPrimary=off -FrameRate=120 -rfbunixpath /tmp/.tiny.vnc -alwaysshared -depth 24 \
       -SecurityTypes None -desktop "Debian 13 XFCE" :1 -extension MIT-SHM > /tmp/vnc.log 2>&1 & \
       while [ ! -S "/tmp/.tiny.vnc" ]; do sleep 0.1; done && \
-      su - tiny -c "DISPLAY=:1 startxfce4" > /dev/null 2>&1 &
+      sudo -u tiny env DISPLAY=:1 HOME=/home/tiny USER=tiny startxfce4 > /dev/null 2>&1 &
     link: "vnc://127.0.0.1:5901"
     enabled: true
     adapt_to_screen_size: true

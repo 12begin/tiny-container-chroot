@@ -834,8 +834,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 val suPath = Global.suPath
                 if (suPath.isNotEmpty()) {
                     // 使用 chroot 进入容器执行 vncpasswd，从标准输入读取密码
+                    // 注意：Android 的 echo 默认不解释 \n，必须用 printf 才能输入两行密码
                     RootUtils.executeWithSu(suPath,
-                        "echo '12345678\n12345678' | chroot \"$containerDir\" /usr/bin/vncpasswd -f > \"$containerDir/root/.vnc/passwd\" 2>/dev/null")
+                        "printf '12345678\\n12345678\\n' | chroot \"$containerDir\" /usr/bin/vncpasswd -f > \"$containerDir/root/.vnc/passwd\" 2>/dev/null")
                     RootUtils.executeWithSu(suPath,
                         "chmod 600 \"$containerDir/root/.vnc/passwd\" 2>/dev/null")
                     appendLog("VNC 密码设置完成")
@@ -857,6 +858,19 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                 }
             } catch (e: Exception) {
                 appendLog("复制 busybox 失败: ${e.message}")
+            }
+            // 校验并兜底修复关键目录权限（防止 rootfs 打包时目录权限是 700，导致 tiny/root 都无法访问）
+            // 这是之前反复启动失败的根因：/usr/lib、/usr/lib/aarch64-linux-gnu 等目录权限 700
+            try {
+                val suPath = Global.suPath
+                if (suPath.isNotEmpty()) {
+                    // 用 chroot 进入容器，把常用系统目录权限放宽到 755，所有者设为 root
+                    RootUtils.executeWithSu(suPath,
+                        "chroot \"$containerDir\" /bin/sh -c 'chmod 755 /usr /usr/bin /usr/lib /usr/lib/aarch64-linux-gnu /usr/share /usr/sbin /bin /lib /sbin /etc /var /opt /media /srv /root 2>/dev/null; chown root:root /usr /usr/bin /usr/lib /usr/lib/aarch64-linux-gnu /usr/share /usr/sbin /bin /lib /sbin /etc /var /opt /media /srv /root 2>/dev/null'")
+                    appendLog("关键目录权限校验完成")
+                }
+            } catch (e: Exception) {
+                appendLog("关键目录权限校验失败: ${e.message}")
             }
         }
         updateCurrentStep(InstallStep.CLEANING_CACHE)
