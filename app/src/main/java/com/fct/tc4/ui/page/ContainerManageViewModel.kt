@@ -708,8 +708,16 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
                     val f = File(link)
                     if (f.exists()) f.delete()
                     Runtime.getRuntime().exec(arrayOf("ln", "-s", target, link)).waitFor()
+                    // 确保目标 .so 有执行权限，否则 execve 会报 Permission denied (error=13)
+                    try {
+                        Runtime.getRuntime().exec(arrayOf("chmod", "755", target)).waitFor()
+                    } catch (_: Exception) {}
                 } catch (_: Exception) {}
             }
+            // 直接对 bootstrap/bin 下的可执行文件再加一次执行权限（防止目标权限丢失）
+            try {
+                Runtime.getRuntime().exec(arrayOf("chmod", "755", "$fDir/bootstrap/bin/busybox", "$fDir/bootstrap/bin/sh", "$fDir/bootstrap/bin/tar", "$fDir/bootstrap/bin/zstd")).waitFor()
+            } catch (_: Exception) {}
             appendLog("bootstrap symlink 创建完成")
         } catch (e: Exception) {
             appendLog("创建 bootstrap symlink 失败: ${e.message}")
