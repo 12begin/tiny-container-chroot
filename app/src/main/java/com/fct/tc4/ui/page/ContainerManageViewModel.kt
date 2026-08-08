@@ -766,6 +766,9 @@ class ContainerManageViewModel(application: Application) : AndroidViewModel(appl
             appendLog("解压失败！容器目录内容:")
             val dirList = dir.list()?.take(20)?.joinToString(", ") ?: "空"
             appendLog("$dirList")
+            // 解压失败必须中止安装，否则会误报"安装成功"
+            cleanCacheFiles()
+            throw RuntimeException("rootfs 解压失败，请删除容器后重新安装")
         } else {
             appendLog("解压成功！")
             // 修复容器 rootfs 关键文件的所有者
