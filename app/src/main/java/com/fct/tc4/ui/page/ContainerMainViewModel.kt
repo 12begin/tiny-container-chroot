@@ -301,8 +301,8 @@ if [ -x "$containerDir/usr/bin/sudo" ]; then
 elif [ -x "$containerDir/bin/sudo" ]; then
     exec chroot "$containerDir" /bin/sudo -u tiny /bin/bash --login
 else
-    # 如果没有 sudo，直接以 root 进入，但设置 HOME 为 tiny 用户
-    exec chroot "$containerDir" /bin/bash --login
+    # 如果没有 sudo，直接以 root 进入，但设置 HOME 为 tiny 用户，让桌面配置可用
+    exec chroot "$containerDir" /usr/bin/env HOME=/home/tiny USER=tiny /bin/bash --login
 fi
 """.trimIndent()
 
